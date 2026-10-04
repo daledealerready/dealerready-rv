@@ -73,6 +73,9 @@ export function ProfileWizard() {
   const [phase, setPhase] = useState<Phase>("questions");
   const [profile, setProfile] = useState<BuyerProfile>(loadProfile());
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [buyerCode, setBuyerCode] = useState("");
+  const [savedCategory, setSavedCategory] = useState("");
 
   useEffect(() => {
     const saved = loadProfile();
@@ -169,8 +172,44 @@ export function ProfileWizard() {
         setError("Please check all boxes to submit your buyer profile.");
         return;
       }
-      setPhase("complete");
-      window.scrollTo({ top: 0, behavior: "smooth" });
+
+      setSubmitting(true);
+      setError("");
+
+      void (async () => {
+        try {
+          const response = await fetch("/api/profile/submit", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ profile }),
+          });
+          const data = (await response.json()) as {
+            ok?: boolean;
+            buyerCode?: string;
+            category?: string;
+            error?: string;
+          };
+
+          if (!response.ok || !data.ok) {
+            setError(
+              data.error ||
+                "We could not save your profile yet. Please try again.",
+            );
+            setSubmitting(false);
+            return;
+          }
+
+          setBuyerCode(data.buyerCode || "");
+          setSavedCategory(data.category || result.category);
+          saveProfile(profile);
+          setPhase("complete");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        } catch {
+          setError("Network error. Please check your connection and try again.");
+        } finally {
+          setSubmitting(false);
+        }
+      })();
     }
   }
 
@@ -200,10 +239,11 @@ export function ProfileWizard() {
   }
 
   if (phase === "complete") {
+    const categoryLabel = savedCategory || result.category;
     const showCategory =
-      result.category === "Premier Buyer" ||
-      result.category === "Dealer Ready" ||
-      result.category === "Qualified Buyer";
+      categoryLabel === "Premier Buyer" ||
+      categoryLabel === "Dealer Ready" ||
+      categoryLabel === "Qualified Buyer";
 
     return (
       <div className="min-h-full bg-paper">
@@ -220,11 +260,16 @@ export function ProfileWizard() {
           </h1>
 
           <div className="mt-8 rounded-md border border-fog bg-white p-6">
+            {buyerCode ? (
+              <p className="mb-4 text-sm font-semibold text-ink/55">
+                Buyer ID: <span className="text-ink">{buyerCode}</span>
+              </p>
+            ) : null}
             <p className="text-sm font-semibold tracking-wide text-ink/55 uppercase">
               DealerReady Status
             </p>
             <p className="mt-2 font-[family-name:var(--font-display)] text-3xl font-semibold text-pine">
-              {showCategory ? result.category : "We're reviewing your profile"}
+              {showCategory ? categoryLabel : "We're reviewing your profile"}
             </p>
             <div className="mt-6 grid gap-3 text-ink/80 sm:grid-cols-2">
               <p>
@@ -324,9 +369,14 @@ export function ProfileWizard() {
           <button
             type="button"
             onClick={goNext}
-            className="inline-flex rounded-md bg-signal px-6 py-3 text-sm font-bold tracking-wide text-white transition hover:bg-signal-deep"
+            disabled={submitting}
+            className="inline-flex rounded-md bg-signal px-6 py-3 text-sm font-bold tracking-wide text-white transition hover:bg-signal-deep disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {phase === "review" ? "SUBMIT MY BUYER PROFILE" : "CONTINUE"}
+            {phase === "review"
+              ? submitting
+                ? "SAVING..."
+                : "SUBMIT MY BUYER PROFILE"
+              : "CONTINUE"}
           </button>
         </div>
 
