@@ -40,6 +40,8 @@ export type BuyerProfile = {
   zip: string;
   preferredContact: string;
   preferredTime: string;
+  phoneVerified: boolean;
+  phoneVerificationToken: string;
   authAccurate: boolean;
   authNotLender: boolean;
   authMatch: boolean;
@@ -86,6 +88,8 @@ export const emptyProfile: BuyerProfile = {
   zip: "",
   preferredContact: "",
   preferredTime: "",
+  phoneVerified: false,
+  phoneVerificationToken: "",
   authAccurate: false,
   authNotLender: false,
   authMatch: false,
@@ -279,8 +283,9 @@ export function scoreProfile(profile: BuyerProfile): {
     score += 2;
   }
 
-  // Contact verified later with Twilio; for now award partial for complete contact
-  if (
+  if (profile.phoneVerified) {
+    score += 5;
+  } else if (
     profile.firstName &&
     profile.lastName &&
     profile.mobile &&

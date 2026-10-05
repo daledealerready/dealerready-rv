@@ -23,7 +23,7 @@ import {
 } from "@/lib/profile";
 import { loadProfile, saveProfile } from "@/lib/profile-storage";
 
-type Phase = "questions" | "review" | "complete";
+type Phase = "questions" | "verify" | "review" | "complete";
 
 function OptionButton({
   selected,
@@ -76,11 +76,21 @@ export function ProfileWizard() {
   const [submitting, setSubmitting] = useState(false);
   const [buyerCode, setBuyerCode] = useState("");
   const [savedCategory, setSavedCategory] = useState("");
+  const [verifyConfigured, setVerifyConfigured] = useState(false);
+  const [verifyCode, setVerifyCode] = useState("");
+  const [codeSent, setCodeSent] = useState(false);
+  const [verifyBusy, setVerifyBusy] = useState(false);
 
   useEffect(() => {
     const saved = loadProfile();
     setProfile(saved);
     setReady(true);
+    void fetch("/api/verify/send")
+      .then((res) => res.json())
+      .then((data: { configured?: boolean }) => {
+        setVerifyConfigured(Boolean(data.configured));
+      })
+      .catch(() => setVerifyConfigured(false));
   }, []);
 
   useEffect(() => {
@@ -157,6 +167,23 @@ export function ProfileWizard() {
         window.scrollTo({ top: 0, behavior: "smooth" });
         return;
       }
+      if (verifyConfigured && !profile.phoneVerified) {
+        setPhase("verify");
+        setCodeSent(false);
+        setVerifyCode("");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
+      setPhase("review");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    if (phase === "verify") {
+      if (!profile.phoneVerified) {
+        setError("Please verify your mobile number to continue.");
+        return;
+      }
       setPhase("review");
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
@@ -216,6 +243,15 @@ export function ProfileWizard() {
   function goBack() {
     setError("");
     if (phase === "review") {
+      if (verifyConfigured) {
+        setPhase("verify");
+      } else {
+        setPhase("questions");
+        setStep(TOTAL_QUESTIONS);
+      }
+      return;
+    }
+    if (phase === "verify") {
       setPhase("questions");
       setStep(TOTAL_QUESTIONS);
       return;
@@ -223,12 +259,66 @@ export function ProfileWizard() {
     if (step > 1) setStep((s) => s - 1);
   }
 
+  async function sendCode() {
+    setVerifyBusy(true);
+    setError("");
+    try {
+      const response = await fetch("/api/verify/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mobile: profile.mobile }),
+      });
+      const data = (await response.json()) as { ok?: boolean; error?: string };
+      if (!response.ok || !data.ok) {
+        setError(data.error || "Could not send the verification text.");
+        return;
+      }
+      setCodeSent(true);
+      update("phoneVerified", false);
+      update("phoneVerificationToken", "");
+    } catch {
+      setError("Network error while sending the code.");
+    } finally {
+      setVerifyBusy(false);
+    }
+  }
+
+  async function confirmCode() {
+    setVerifyBusy(true);
+    setError("");
+    try {
+      const response = await fetch("/api/verify/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mobile: profile.mobile, code: verifyCode }),
+      });
+      const data = (await response.json()) as {
+        ok?: boolean;
+        verificationToken?: string;
+        error?: string;
+      };
+      if (!response.ok || !data.ok || !data.verificationToken) {
+        setError(data.error || "That code did not work.");
+        return;
+      }
+      update("phoneVerified", true);
+      update("phoneVerificationToken", data.verificationToken);
+      setError("");
+    } catch {
+      setError("Network error while checking the code.");
+    } finally {
+      setVerifyBusy(false);
+    }
+  }
+
   const progress =
     phase === "complete"
       ? 100
       : phase === "review"
         ? 96
-        : Math.round((step / TOTAL_QUESTIONS) * 90);
+        : phase === "verify"
+          ? 92
+          : Math.round((step / TOTAL_QUESTIONS) * 88);
 
   if (!ready) {
     return (
@@ -271,6 +361,11 @@ export function ProfileWizard() {
             <p className="mt-2 font-[family-name:var(--font-display)] text-3xl font-semibold text-pine">
               {showCategory ? categoryLabel : "We're reviewing your profile"}
             </p>
+            {profile.phoneVerified ? (
+              <p className="mt-3 text-sm font-semibold text-signal">
+                Mobile number verified
+              </p>
+            ) : null}
             <div className="mt-6 grid gap-3 text-ink/80 sm:grid-cols-2">
               <p>
                 <span className="font-semibold text-ink">Vehicle:</span>{" "}
@@ -327,7 +422,9 @@ export function ProfileWizard() {
         label={
           phase === "review"
             ? "Review"
-            : `Step ${step} of ${TOTAL_QUESTIONS}`
+            : phase === "verify"
+              ? "Verify phone"
+              : `Step ${step} of ${TOTAL_QUESTIONS}`
         }
         progress={progress}
       />
@@ -339,6 +436,17 @@ export function ProfileWizard() {
 
         {phase === "review" ? (
           <ReviewStep profile={profile} update={update} />
+        ) : phase === "verify" ? (
+          <VerifyStep
+            mobile={profile.mobile}
+            code={verifyCode}
+            codeSent={codeSent}
+            verified={profile.phoneVerified}
+            busy={verifyBusy}
+            onCodeChange={setVerifyCode}
+            onSend={() => void sendCode()}
+            onConfirm={() => void confirmCode()}
+          />
         ) : (
           <QuestionStep
             step={step}
@@ -369,14 +477,19 @@ export function ProfileWizard() {
           <button
             type="button"
             onClick={goNext}
-            disabled={submitting}
+            disabled={
+              submitting ||
+              (phase === "verify" && !profile.phoneVerified)
+            }
             className="inline-flex rounded-md bg-signal px-6 py-3 text-sm font-bold tracking-wide text-white transition hover:bg-signal-deep disabled:cursor-not-allowed disabled:opacity-60"
           >
             {phase === "review"
               ? submitting
                 ? "SAVING..."
                 : "SUBMIT MY BUYER PROFILE"
-              : "CONTINUE"}
+              : phase === "verify"
+                ? "CONTINUE"
+                : "CONTINUE"}
           </button>
         </div>
 
@@ -906,6 +1019,82 @@ function QuestionStep({
     default:
       return null;
   }
+}
+
+function VerifyStep({
+  mobile,
+  code,
+  codeSent,
+  verified,
+  busy,
+  onCodeChange,
+  onSend,
+  onConfirm,
+}: {
+  mobile: string;
+  code: string;
+  codeSent: boolean;
+  verified: boolean;
+  busy: boolean;
+  onCodeChange: (value: string) => void;
+  onSend: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <>
+      <h1 className="mt-3 font-[family-name:var(--font-display)] text-4xl font-semibold tracking-wide text-ink md:text-5xl">
+        Verify your mobile number.
+      </h1>
+      <p className="mt-4 text-lg text-ink/70">
+        We&apos;ll text a 6-digit code to <span className="font-semibold text-ink">{mobile}</span> so
+        dealers know this number is real.
+      </p>
+
+      {!verified ? (
+        <div className="mt-8 space-y-4">
+          <button
+            type="button"
+            onClick={onSend}
+            disabled={busy}
+            className="inline-flex rounded-md bg-signal px-6 py-3 text-sm font-bold tracking-wide text-white hover:bg-signal-deep disabled:opacity-60"
+          >
+            {busy && !codeSent
+              ? "SENDING..."
+              : codeSent
+                ? "RESEND CODE"
+                : "SEND CODE"}
+          </button>
+
+          {codeSent ? (
+            <div className="space-y-4">
+              <Field label="Enter the 6-digit code">
+                <input
+                  className={inputClass}
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  value={code}
+                  onChange={(e) => onCodeChange(e.target.value)}
+                  placeholder="482195"
+                />
+              </Field>
+              <button
+                type="button"
+                onClick={onConfirm}
+                disabled={busy || code.replace(/\D/g, "").length < 4}
+                className="inline-flex rounded-md border border-fog px-6 py-3 text-sm font-bold tracking-wide text-ink hover:bg-mist disabled:opacity-60"
+              >
+                {busy ? "CHECKING..." : "VERIFY"}
+              </button>
+            </div>
+          ) : null}
+        </div>
+      ) : (
+        <div className="mt-8 rounded-md border border-signal/30 bg-mist px-4 py-4 text-ink">
+          Mobile number verified. You can continue.
+        </div>
+      )}
+    </>
+  );
 }
 
 function ReviewStep({
