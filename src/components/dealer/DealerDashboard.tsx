@@ -112,14 +112,29 @@ export function DealerDashboard() {
         </button>
       </div>
 
+      <div className="mt-6 flex flex-wrap gap-3">
+        <Link
+          href="/dealer/marketplace"
+          className="rounded-md bg-signal px-5 py-3 text-sm font-bold tracking-wide text-white hover:bg-signal-deep"
+        >
+          BUYER MARKETPLACE
+        </Link>
+        <Link
+          href="/dealer/purchased"
+          className="rounded-md border border-fog px-5 py-3 text-sm font-semibold text-ink hover:bg-mist"
+        >
+          Purchased leads
+        </Link>
+      </div>
+
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {[
-          ["New Opportunities", "0"],
-          ["Leads Purchased", "0"],
-          ["Appointments", "0"],
-          ["Sales", "0"],
-          ["Monthly Lead Spend", "$0"],
-          ["Membership", "Pilot $299"],
+          ["New Opportunities", "Open market"],
+          ["Leads Purchased", "View list"],
+          ["Appointments", "Soon"],
+          ["Sales", "Soon"],
+          ["Monthly Lead Spend", "Pilot mode"],
+          ["Membership", "Pilot $499"],
         ].map(([label, value]) => (
           <div
             key={label}
@@ -166,12 +181,11 @@ export function DealerDashboard() {
       </div>
 
       <div className="mt-8 rounded-md bg-mist px-5 py-5 text-ink/80">
-        <p className="font-semibold text-ink">Coming next in the pilot build</p>
+        <p className="font-semibold text-ink">Still coming in the pilot build</p>
         <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
-          <li>Buyer marketplace</li>
-          <li>Lead purchase and unlock</li>
+          <li>Stripe membership + lead billing ($499/month pilot)</li>
           <li>Appointment and sales tracking</li>
-          <li>Membership billing</li>
+          <li>Dealer filters and auto-buy rules</li>
         </ul>
       </div>
     </div>

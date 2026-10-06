@@ -73,7 +73,7 @@ export function DealerApplyForm() {
         </h2>
         <p className="mt-4 text-ink/75">
           Thanks for applying. DealerReady will review your dealership and
-          follow up by email. During the pilot, approved dealers pay $299/month
+          follow up by email. During the pilot, approved dealers pay $499/month
           plus purchased-lead fees.
         </p>
         <Link
@@ -266,7 +266,7 @@ export function DealerApplyForm() {
       </section>
 
       <div className="rounded-md bg-mist px-4 py-3 text-sm text-ink/75">
-        Pilot membership is $299/month plus purchased-lead fees. No success fee
+        Pilot membership is $499/month plus purchased-lead fees. No success fee
         during the 90-day pilot. DealerReady is not a lender.
       </div>
 

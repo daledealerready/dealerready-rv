@@ -66,7 +66,7 @@ export default function ForDealersPage() {
             <h2 className="mt-2 text-xl font-semibold text-ink">Get approved</h2>
             <p className="mt-2 text-ink/70">
               DealerReady reviews your application. Pilot dealers join at
-              $299/month.
+              $499/month.
             </p>
           </div>
           <div>
@@ -88,7 +88,7 @@ export default function ForDealersPage() {
             90-day Founding Dealer Pilot
           </h2>
           <ul className="mt-4 space-y-2 text-ink/75">
-            <li>$299/month membership</li>
+            <li>$499/month membership</li>
             <li>Plus category-based lead fees</li>
             <li>No mandatory success fee during the pilot</li>
             <li>We qualify before we connect</li>
