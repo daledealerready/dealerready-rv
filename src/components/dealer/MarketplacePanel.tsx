@@ -23,6 +23,7 @@ type Opportunity = {
   creditRange: string | null;
   travelDistance: string | null;
   preferredContact: string | null;
+  zip: string | null;
   spotsLeft: number;
   price: number | null;
   priceBandLabel: string | null;
