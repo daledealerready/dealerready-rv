@@ -26,6 +26,10 @@ drop policy if exists "No public pending checkout reads" on public.pending_lead_
 create policy "No public pending checkout reads"
   on public.pending_lead_checkouts for select to anon using (false);
 
+-- Postgres cannot change a function's return columns with CREATE OR REPLACE.
+-- Drop the old dealer_session_lookup first, then recreate with billing fields.
+drop function if exists public.dealer_session_lookup(uuid);
+
 create or replace function public.dealer_session_lookup(
   p_dealer_id uuid
 )
@@ -74,6 +78,9 @@ begin
   limit 1;
 end;
 $$;
+
+revoke all on function public.dealer_session_lookup(uuid) from public;
+grant execute on function public.dealer_session_lookup(uuid) to anon, authenticated;
 
 create or replace function public.dealer_set_membership(
   p_dealer_id uuid,
