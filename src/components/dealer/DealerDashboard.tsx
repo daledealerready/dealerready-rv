@@ -28,7 +28,9 @@ export function DealerDashboard() {
   const [dealer, setDealer] = useState<DealerInfo | null>(null);
 
   useEffect(() => {
-    const token = window.sessionStorage.getItem(SESSION_KEY);
+    const token =
+      window.localStorage.getItem(SESSION_KEY) ||
+      window.sessionStorage.getItem(SESSION_KEY);
     if (!token) {
       router.replace("/sign-in");
       return;
@@ -47,8 +49,10 @@ export function DealerDashboard() {
           error?: string;
         };
         if (!response.ok || !data.ok || !data.dealer) {
+          window.localStorage.removeItem(SESSION_KEY);
           window.sessionStorage.removeItem(SESSION_KEY);
           setError(data.error || "Please sign in again.");
+          setLoading(false);
           router.replace("/sign-in");
           return;
         }
@@ -98,6 +102,7 @@ export function DealerDashboard() {
         <button
           type="button"
           onClick={() => {
+            window.localStorage.removeItem(SESSION_KEY);
             window.sessionStorage.removeItem(SESSION_KEY);
             router.push("/sign-in");
           }}

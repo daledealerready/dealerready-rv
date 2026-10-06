@@ -32,6 +32,7 @@ export function DealerSignInForm() {
         setError(data.error || "Could not sign in.");
         return;
       }
+      window.localStorage.setItem(SESSION_KEY, data.token);
       window.sessionStorage.setItem(SESSION_KEY, data.token);
       router.push("/dealer/dashboard");
     } catch {
