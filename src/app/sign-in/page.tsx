@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DealerSignInForm } from "@/components/dealer/DealerSignInForm";
 
 export default function SignInPage() {
   return (
@@ -8,18 +9,13 @@ export default function SignInPage() {
           ← Back home
         </Link>
         <h1 className="mt-6 font-[family-name:var(--font-display)] text-4xl font-semibold tracking-wide text-ink">
-          Sign In
+          Dealer Sign In
         </h1>
         <p className="mt-4 text-ink/75">
-          Account login comes in the next build step. For now, start your buyer
-          profile from the homepage.
+          Approved dealers can sign in with the email from their application and
+          the temporary password from DealerReady.
         </p>
-        <Link
-          href="/profile/start"
-          className="mt-8 inline-flex rounded-md bg-signal px-6 py-3 text-sm font-bold tracking-wide text-white hover:bg-signal-deep"
-        >
-          BUILD MY BUYER PROFILE
-        </Link>
+        <DealerSignInForm />
       </div>
     </div>
   );

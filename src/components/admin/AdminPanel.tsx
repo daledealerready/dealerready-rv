@@ -68,6 +68,11 @@ export function AdminPanel() {
   const [loading, setLoading] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState("");
+  const [tempPasswordNotice, setTempPasswordNotice] = useState<{
+    email: string;
+    password: string;
+    business: string;
+  } | null>(null);
 
   const selectedBuyer = useMemo(
     () => buyers.find((buyer) => buyer.id === selectedBuyerId) ?? null,
@@ -141,6 +146,7 @@ export function AdminPanel() {
     const pass = window.sessionStorage.getItem(SESSION_KEY) || password;
     setUpdating(true);
     setError("");
+    setTempPasswordNotice(null);
     try {
       const response = await fetch("/api/admin/dealers/status", {
         method: "POST",
@@ -161,6 +167,45 @@ export function AdminPanel() {
       setTab("dealers");
     } catch {
       setError("Network error while updating dealer.");
+    } finally {
+      setUpdating(false);
+    }
+  }
+
+  async function approveWithLogin() {
+    if (!selectedDealer) return;
+    const pass = window.sessionStorage.getItem(SESSION_KEY) || password;
+    setUpdating(true);
+    setError("");
+    setTempPasswordNotice(null);
+    try {
+      const response = await fetch("/api/admin/dealers/approve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          password: pass,
+          dealerId: selectedDealer.id,
+        }),
+      });
+      const data = (await response.json()) as {
+        ok?: boolean;
+        tempPassword?: string;
+        error?: string;
+      };
+      if (!response.ok || !data.ok || !data.tempPassword) {
+        setError(data.error || "Could not approve dealer.");
+        return;
+      }
+      setTempPasswordNotice({
+        email: selectedDealer.email,
+        password: data.tempPassword,
+        business: selectedDealer.legal_business_name,
+      });
+      await refresh();
+      setSelectedDealerId(selectedDealer.id);
+      setTab("dealers");
+    } catch {
+      setError("Network error while approving dealer.");
     } finally {
       setUpdating(false);
     }
@@ -279,6 +324,28 @@ export function AdminPanel() {
         <p className="mt-4 text-sm font-medium text-red-700">{error}</p>
       ) : null}
 
+      {tempPasswordNotice ? (
+        <div className="mt-4 rounded-md border border-signal/30 bg-mist p-4 text-sm text-ink">
+          <p className="font-semibold">
+            {tempPasswordNotice.business} approved — send these login details:
+          </p>
+          <p className="mt-2">
+            Sign-in page:{" "}
+            <span className="font-semibold">dealerreadyrv.com/sign-in</span>
+          </p>
+          <p>
+            Email: <span className="font-semibold">{tempPasswordNotice.email}</span>
+          </p>
+          <p>
+            Temporary password:{" "}
+            <span className="font-semibold">{tempPasswordNotice.password}</span>
+          </p>
+          <p className="mt-2 text-ink/70">
+            Copy this now. For security, it is only shown once here.
+          </p>
+        </div>
+      ) : null}
+
       {tab === "buyers" ? (
         <BuyersSection
           buyers={buyers}
@@ -292,6 +359,7 @@ export function AdminPanel() {
           updating={updating}
           onSelect={setSelectedDealerId}
           onUpdateStatus={(status) => void updateDealerStatus(status)}
+          onApproveWithLogin={() => void approveWithLogin()}
         />
       )}
     </div>
@@ -388,12 +456,14 @@ function DealersSection({
   updating,
   onSelect,
   onUpdateStatus,
+  onApproveWithLogin,
 }: {
   dealers: DealerRow[];
   selected: DealerRow | null;
   updating: boolean;
   onSelect: (id: string) => void;
   onUpdateStatus: (status: string) => void;
+  onApproveWithLogin: () => void;
 }) {
   if (dealers.length === 0) {
     return (
@@ -468,10 +538,18 @@ function DealersSection({
               <button
                 type="button"
                 disabled={updating}
-                onClick={() => onUpdateStatus("approved")}
+                onClick={onApproveWithLogin}
                 className="rounded-md bg-signal px-4 py-2 text-xs font-bold tracking-wide text-white disabled:opacity-60"
               >
-                APPROVE
+                APPROVE + CREATE LOGIN
+              </button>
+              <button
+                type="button"
+                disabled={updating}
+                onClick={() => onUpdateStatus("approved")}
+                className="rounded-md border border-fog px-4 py-2 text-xs font-bold tracking-wide text-ink disabled:opacity-60"
+              >
+                APPROVE ONLY
               </button>
               <button
                 type="button"
