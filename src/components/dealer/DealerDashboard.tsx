@@ -19,13 +19,18 @@ type DealerInfo = {
   rvCategories: string[];
   brandsCarried: string | null;
   inventoryType: string | null;
+  membershipStatus?: string;
+  membershipCurrentPeriodEnd?: string | null;
 };
 
 export function DealerDashboard() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [billingBusy, setBillingBusy] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [dealer, setDealer] = useState<DealerInfo | null>(null);
+  const [stripeConfigured, setStripeConfigured] = useState(false);
 
   useEffect(() => {
     const token =
@@ -46,6 +51,7 @@ export function DealerDashboard() {
         const data = (await response.json()) as {
           ok?: boolean;
           dealer?: DealerInfo;
+          stripeConfigured?: boolean;
           error?: string;
         };
         if (!response.ok || !data.ok || !data.dealer) {
@@ -57,6 +63,14 @@ export function DealerDashboard() {
           return;
         }
         setDealer(data.dealer);
+        setStripeConfigured(Boolean(data.stripeConfigured));
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("membership") === "success") {
+          setNotice("Membership checkout completed. Refresh if status is still updating.");
+        }
+        if (params.get("membership") === "canceled") {
+          setNotice("Membership checkout was canceled.");
+        }
       } catch {
         setError("Network error loading dashboard.");
       } finally {
@@ -64,6 +78,46 @@ export function DealerDashboard() {
       }
     })();
   }, [router]);
+
+  async function startMembershipCheckout() {
+    const token =
+      window.localStorage.getItem(SESSION_KEY) ||
+      window.sessionStorage.getItem(SESSION_KEY);
+    if (!token) {
+      router.replace("/sign-in");
+      return;
+    }
+    setBillingBusy(true);
+    setError("");
+    try {
+      const response = await fetch("/api/dealer/billing/membership", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+      });
+      const data = (await response.json()) as {
+        ok?: boolean;
+        url?: string;
+        alreadyActive?: boolean;
+        error?: string;
+      };
+      if (!response.ok || !data.ok) {
+        setError(data.error || "Could not start membership checkout.");
+        return;
+      }
+      if (data.alreadyActive) {
+        setNotice("Membership is already active.");
+        return;
+      }
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch {
+      setError("Network error starting membership checkout.");
+    } finally {
+      setBillingBusy(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -125,7 +179,24 @@ export function DealerDashboard() {
         >
           Purchased leads
         </Link>
+        {stripeConfigured && dealer.membershipStatus !== "active" ? (
+          <button
+            type="button"
+            disabled={billingBusy}
+            onClick={() => void startMembershipCheckout()}
+            className="rounded-md border border-signal px-5 py-3 text-sm font-bold tracking-wide text-signal hover:bg-mist disabled:opacity-60"
+          >
+            {billingBusy ? "LOADING..." : "ACTIVATE $499 MEMBERSHIP"}
+          </button>
+        ) : null}
       </div>
+
+      {notice ? (
+        <p className="mt-4 rounded-md bg-mist px-4 py-3 text-sm text-ink">{notice}</p>
+      ) : null}
+      {error ? (
+        <p className="mt-4 text-sm font-medium text-red-700">{error}</p>
+      ) : null}
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {[
@@ -133,8 +204,15 @@ export function DealerDashboard() {
           ["Leads Purchased", "View list"],
           ["Appointments", "Soon"],
           ["Sales", "Soon"],
-          ["Monthly Lead Spend", "Pilot mode"],
-          ["Membership", "Pilot $499"],
+          ["Monthly Lead Spend", "Per lead"],
+          [
+            "Membership",
+            dealer.membershipStatus === "active"
+              ? "Active $499"
+              : stripeConfigured
+                ? "Inactive"
+                : "Pilot $499",
+          ],
         ].map(([label, value]) => (
           <div
             key={label}
@@ -181,11 +259,11 @@ export function DealerDashboard() {
       </div>
 
       <div className="mt-8 rounded-md bg-mist px-5 py-5 text-ink/80">
-        <p className="font-semibold text-ink">Still coming in the pilot build</p>
+        <p className="font-semibold text-ink">Billing plan</p>
         <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
-          <li>Stripe membership + lead billing ($499/month pilot)</li>
-          <li>Appointment and sales tracking</li>
-          <li>Dealer filters and auto-buy rules</li>
+          <li>$499/month pilot membership</li>
+          <li>Plus category-based lead fees at unlock</li>
+          <li>No success fee during the pilot</li>
         </ul>
       </div>
     </div>

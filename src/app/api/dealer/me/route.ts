@@ -37,6 +37,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       ok: true,
+      stripeConfigured: Boolean(process.env.STRIPE_SECRET_KEY),
       dealer: {
         id: dealer.id,
         legalBusinessName: dealer.legal_business_name,
@@ -50,6 +51,8 @@ export async function POST(request: Request) {
         rvCategories: dealer.rv_categories || [],
         brandsCarried: dealer.brands_carried,
         inventoryType: dealer.inventory_type,
+        membershipStatus: dealer.membership_status || "inactive",
+        membershipCurrentPeriodEnd: dealer.membership_current_period_end || null,
       },
     });
   } catch (error) {

@@ -103,9 +103,25 @@ export function MarketplacePanel() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token, buyerId }),
       });
-      const data = (await response.json()) as { ok?: boolean; error?: string };
+      const data = (await response.json()) as {
+        ok?: boolean;
+        mode?: string;
+        url?: string;
+        needsMembership?: boolean;
+        error?: string;
+      };
       if (!response.ok || !data.ok) {
-        setError(data.error || "Could not unlock this lead.");
+        if (data.needsMembership) {
+          setError(
+            "Activate your $499/month membership on the dashboard before unlocking leads.",
+          );
+        } else {
+          setError(data.error || "Could not unlock this lead.");
+        }
+        return;
+      }
+      if (data.mode === "stripe" && data.url) {
+        window.location.href = data.url;
         return;
       }
       router.push("/dealer/purchased");
@@ -139,8 +155,8 @@ export function MarketplacePanel() {
           </h1>
           <p className="mt-2 max-w-2xl text-ink/70">
             Browse anonymous qualified opportunities. Contact details unlock
-            after purchase. Pilot unlock records the lead fee amount now;
-            Stripe billing comes next.
+            after payment. Active $499 membership is required once Stripe is
+            connected.
           </p>
         </div>
         <Link
@@ -250,8 +266,7 @@ export function MarketplacePanel() {
                     : ""}
                 </p>
                 <p className="text-xs text-ink/55">
-                  Name, phone, and email stay hidden until unlock. Pilot unlock
-                  does not charge a card yet.
+                  Name, phone, and email stay hidden until payment unlock.
                 </p>
                 <button
                   type="button"
@@ -260,8 +275,8 @@ export function MarketplacePanel() {
                   className="mt-2 inline-flex w-full justify-center rounded-md bg-signal px-4 py-3 text-sm font-bold tracking-wide text-white hover:bg-signal-deep disabled:opacity-60"
                 >
                   {busyId === selected.buyerId
-                    ? "UNLOCKING..."
-                    : `UNLOCK LEAD${selected.price != null ? ` — $${selected.price}` : ""}`}
+                    ? "STARTING CHECKOUT..."
+                    : `PURCHASE LEAD${selected.price != null ? ` — $${selected.price}` : ""}`}
                 </button>
               </div>
             ) : (
