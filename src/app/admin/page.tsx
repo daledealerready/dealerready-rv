@@ -1,4 +1,4 @@
-import { AdminBuyersPanel } from "@/components/admin/AdminBuyersPanel";
+import { AdminPanel } from "@/components/admin/AdminPanel";
 
 export default function AdminPage() {
   return (
@@ -11,7 +11,7 @@ export default function AdminPage() {
           <p className="text-sm font-medium text-ink/55">Admin</p>
         </div>
       </header>
-      <AdminBuyersPanel />
+      <AdminPanel />
     </div>
   );
 }
