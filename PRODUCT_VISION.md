@@ -50,8 +50,8 @@ Separate service on the platform:
 - This is a seller-side / acquisition offer, not the same as dealer lead marketplace
 
 ## Suggested build order (so nothing is forgotten, but pilot stays first)
-1. Finish Stripe test checkout + prove pilot membership / lead pay flow
-2. Returning-client profile update + history
+1. Finish Stripe test checkout + prove pilot membership / lead pay flow — DONE (test mode)
+2. Returning-client profile update + history — IN PROGRESS / shipping
 3. Dealer-uploaded inventory browse / match (start here before external feeds)
 4. Paid header advertising ticker (event date window)
 5. Serious-buyer auto-activation / contact (Twilio or email first)

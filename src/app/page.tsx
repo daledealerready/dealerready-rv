@@ -45,10 +45,10 @@ export default function Home() {
                 BUILD MY BUYER PROFILE
               </Link>
               <Link
-                href="/profile/start"
+                href="/profile/start?mode=return"
                 className="inline-flex items-center justify-center rounded-md border border-white/40 px-7 py-4 text-center text-sm font-semibold tracking-wide text-white transition hover:bg-white/10 sm:text-base"
               >
-                I ALREADY KNOW WHAT I WANT
+                UPDATE MY PROFILE
               </Link>
             </div>
           </div>

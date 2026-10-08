@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   BRAND_OPTIONS,
   COBUYER_OPTIONS,
@@ -21,7 +22,12 @@ import {
   scoreProfile,
   type BuyerProfile,
 } from "@/lib/profile";
-import { loadProfile, saveProfile } from "@/lib/profile-storage";
+import {
+  loadBuyerCode,
+  loadProfile,
+  saveBuyerCode,
+  saveProfile,
+} from "@/lib/profile-storage";
 
 type Phase = "questions" | "verify" | "review" | "complete";
 
@@ -68,6 +74,7 @@ const inputClass =
   "w-full rounded-md border border-fog bg-white px-4 py-3 text-base text-ink outline-none transition focus:border-signal";
 
 export function ProfileWizard() {
+  const searchParams = useSearchParams();
   const [ready, setReady] = useState(false);
   const [step, setStep] = useState(1);
   const [phase, setPhase] = useState<Phase>("questions");
@@ -76,14 +83,27 @@ export function ProfileWizard() {
   const [submitting, setSubmitting] = useState(false);
   const [buyerCode, setBuyerCode] = useState("");
   const [savedCategory, setSavedCategory] = useState("");
+  const [wasUpdated, setWasUpdated] = useState(false);
   const [verifyConfigured, setVerifyConfigured] = useState(false);
   const [verifyCode, setVerifyCode] = useState("");
   const [codeSent, setCodeSent] = useState(false);
   const [verifyBusy, setVerifyBusy] = useState(false);
+  const [showReturnForm, setShowReturnForm] = useState(false);
+  const [returnEmail, setReturnEmail] = useState("");
+  const [returnCode, setReturnCode] = useState("");
+  const [returnBusy, setReturnBusy] = useState(false);
+  const [returnNotice, setReturnNotice] = useState("");
 
   useEffect(() => {
     const saved = loadProfile();
+    const savedCode = loadBuyerCode();
     setProfile(saved);
+    setBuyerCode(savedCode);
+    setReturnCode(savedCode);
+    if (saved.email) setReturnEmail(saved.email);
+    if (searchParams.get("mode") === "return") {
+      setShowReturnForm(true);
+    }
     setReady(true);
     void fetch("/api/verify/send")
       .then((res) => res.json())
@@ -91,7 +111,7 @@ export function ProfileWizard() {
         setVerifyConfigured(Boolean(data.configured));
       })
       .catch(() => setVerifyConfigured(false));
-  }, []);
+  }, [searchParams]);
 
   useEffect(() => {
     if (!ready) return;
@@ -208,10 +228,14 @@ export function ProfileWizard() {
           const response = await fetch("/api/profile/submit", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ profile }),
+            body: JSON.stringify({
+              profile,
+              buyerCode: buyerCode || loadBuyerCode() || undefined,
+            }),
           });
           const data = (await response.json()) as {
             ok?: boolean;
+            updated?: boolean;
             buyerCode?: string;
             category?: string;
             error?: string;
@@ -226,7 +250,10 @@ export function ProfileWizard() {
             return;
           }
 
-          setBuyerCode(data.buyerCode || "");
+          const nextCode = data.buyerCode || buyerCode || "";
+          setBuyerCode(nextCode);
+          saveBuyerCode(nextCode);
+          setWasUpdated(Boolean(data.updated));
           setSavedCategory(data.category || result.category);
           saveProfile(profile);
           setPhase("complete");
@@ -237,6 +264,51 @@ export function ProfileWizard() {
           setSubmitting(false);
         }
       })();
+    }
+  }
+
+  async function loadReturningProfile() {
+    setReturnBusy(true);
+    setError("");
+    setReturnNotice("");
+    try {
+      const response = await fetch("/api/profile/lookup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: returnEmail,
+          buyerCode: returnCode,
+        }),
+      });
+      const data = (await response.json()) as {
+        ok?: boolean;
+        profile?: BuyerProfile;
+        buyerCode?: string;
+        error?: string;
+      };
+
+      if (!response.ok || !data.ok || !data.profile) {
+        setError(data.error || "Could not load your profile.");
+        setReturnBusy(false);
+        return;
+      }
+
+      setProfile(data.profile);
+      saveProfile(data.profile);
+      const code = data.buyerCode || returnCode.trim().toUpperCase();
+      setBuyerCode(code);
+      saveBuyerCode(code);
+      setShowReturnForm(false);
+      setPhase("questions");
+      setStep(1);
+      setReturnNotice(
+        "Welcome back. Your saved profile is loaded — change anything, then submit to update.",
+      );
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setReturnBusy(false);
     }
   }
 
@@ -346,14 +418,23 @@ export function ProfileWizard() {
             Buyer profile
           </p>
           <h1 className="mt-3 font-[family-name:var(--font-display)] text-4xl font-semibold tracking-wide text-ink md:text-5xl">
-            Your Buyer Profile is complete.
+            {wasUpdated
+              ? "Your Buyer Profile was updated."
+              : "Your Buyer Profile is complete."}
           </h1>
 
           <div className="mt-8 rounded-md border border-fog bg-white p-6">
             {buyerCode ? (
-              <p className="mb-4 text-sm font-semibold text-ink/55">
-                Buyer ID: <span className="text-ink">{buyerCode}</span>
-              </p>
+              <div className="mb-4">
+                <p className="text-sm font-semibold text-ink/55">
+                  Buyer ID:{" "}
+                  <span className="text-ink">{buyerCode}</span>
+                </p>
+                <p className="mt-1 text-sm text-ink/65">
+                  Save this Buyer ID. Use it with your email anytime you return
+                  to update what you&apos;re looking for.
+                </p>
+              </div>
             ) : null}
             <p className="text-sm font-semibold tracking-wide text-ink/55 uppercase">
               DealerReady Status
@@ -361,6 +442,11 @@ export function ProfileWizard() {
             <p className="mt-2 font-[family-name:var(--font-display)] text-3xl font-semibold text-pine">
               {showCategory ? categoryLabel : "We're reviewing your profile"}
             </p>
+            {wasUpdated ? (
+              <p className="mt-3 text-sm font-semibold text-signal">
+                Previous answers were saved to your client history.
+              </p>
+            ) : null}
             {profile.phoneVerified ? (
               <p className="mt-3 text-sm font-semibold text-signal">
                 Mobile number verified
@@ -389,7 +475,9 @@ export function ProfileWizard() {
           </div>
 
           <p className="mt-6 text-ink/70">
-            We&apos;re reviewing your profile for matching opportunities.
+            {wasUpdated
+              ? "Your updated preferences are ready for dealer matching."
+              : "We're reviewing your profile for matching opportunities."}{" "}
             DealerReady is not a lender and does not approve financing.
           </p>
 
@@ -397,8 +485,12 @@ export function ProfileWizard() {
             <button
               type="button"
               onClick={() => {
+                setWasUpdated(false);
                 setPhase("questions");
                 setStep(1);
+                setReturnNotice(
+                  "Change any answers, then submit again to update your client profile.",
+                );
               }}
               className="inline-flex justify-center rounded-md bg-signal px-6 py-3 text-sm font-bold tracking-wide text-white hover:bg-signal-deep"
             >
@@ -433,6 +525,70 @@ export function ProfileWizard() {
         <p className="font-[family-name:var(--font-display)] text-sm font-semibold tracking-[0.16em] text-signal uppercase">
           Buyer profile
         </p>
+
+        {phase === "questions" && step === 1 ? (
+          <div className="mt-4 mb-8 rounded-md border border-fog bg-white p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="font-semibold text-ink">Returning client?</p>
+                <p className="mt-1 text-sm text-ink/65">
+                  Load your saved profile with email + Buyer ID, then update
+                  what you&apos;re looking for.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowReturnForm((open) => !open);
+                  setError("");
+                }}
+                className="rounded-md border border-signal px-4 py-2 text-sm font-bold tracking-wide text-signal hover:bg-mist"
+              >
+                {showReturnForm ? "HIDE" : "UPDATE MY PROFILE"}
+              </button>
+            </div>
+
+            {showReturnForm ? (
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <Field label="Email">
+                  <input
+                    type="email"
+                    value={returnEmail}
+                    onChange={(e) => setReturnEmail(e.target.value)}
+                    className={inputClass}
+                    placeholder="you@email.com"
+                  />
+                </Field>
+                <Field label="Buyer ID">
+                  <input
+                    type="text"
+                    value={returnCode}
+                    onChange={(e) => setReturnCode(e.target.value.toUpperCase())}
+                    className={inputClass}
+                    placeholder="DR-12345"
+                  />
+                </Field>
+                <div className="sm:col-span-2">
+                  <button
+                    type="button"
+                    disabled={returnBusy}
+                    onClick={() => void loadReturningProfile()}
+                    className="rounded-md bg-signal px-5 py-3 text-sm font-bold tracking-wide text-white hover:bg-signal-deep disabled:opacity-60"
+                  >
+                    {returnBusy ? "LOADING..." : "LOAD MY PROFILE"}
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
+        {returnNotice && phase === "questions" ? (
+          <p className="mb-4 rounded-md bg-mist px-4 py-3 text-sm text-ink">
+            {returnNotice}
+            {buyerCode ? ` Buyer ID: ${buyerCode}` : ""}
+          </p>
+        ) : null}
 
         {phase === "review" ? (
           <ReviewStep profile={profile} update={update} />
@@ -486,7 +642,9 @@ export function ProfileWizard() {
             {phase === "review"
               ? submitting
                 ? "SAVING..."
-                : "SUBMIT MY BUYER PROFILE"
+                : buyerCode
+                  ? "UPDATE MY BUYER PROFILE"
+                  : "SUBMIT MY BUYER PROFILE"
               : phase === "verify"
                 ? "CONTINUE"
                 : "CONTINUE"}
@@ -495,6 +653,9 @@ export function ProfileWizard() {
 
         <p className="mt-8 text-sm text-ink/50">
           Progress saves automatically on this device.
+          {buyerCode
+            ? " Returning with the same email updates your client record and keeps history."
+            : ""}
         </p>
       </main>
     </div>
