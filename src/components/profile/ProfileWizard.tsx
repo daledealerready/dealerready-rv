@@ -790,7 +790,11 @@ function QuestionStep({
                 onChange={(e) => update("preferredManufacturer", e.target.value)}
               >
                 <option value="">Select one</option>
-                {BRAND_OPTIONS.map((brand) => (
+                {(BRAND_OPTIONS.includes(profile.preferredManufacturer) ||
+                !profile.preferredManufacturer
+                  ? BRAND_OPTIONS
+                  : [profile.preferredManufacturer, ...BRAND_OPTIONS]
+                ).map((brand) => (
                   <option key={brand} value={brand}>
                     {brand}
                   </option>

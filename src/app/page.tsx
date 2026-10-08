@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { ExactUnitSearch } from "@/components/ExactUnitSearch";
 import { SiteHeader } from "@/components/SiteHeader";
 
 export default function Home() {
@@ -37,7 +38,11 @@ export default function Home() {
               serious RV shoppers with participating dealerships.
             </p>
 
-            <div className="animate-rise-delay-3 mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="animate-rise-delay-3">
+              <ExactUnitSearch />
+            </div>
+
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
               <Link
                 href="/profile/start"
                 className="cta-pulse inline-flex items-center justify-center rounded-md bg-signal px-7 py-4 text-center text-sm font-bold tracking-wide text-white transition hover:bg-signal-deep sm:text-base"

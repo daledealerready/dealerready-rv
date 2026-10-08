@@ -9,6 +9,7 @@ export type BuyerProfile = {
   preferredManufacturer: string;
   preferredModel: string;
   preferredFloorplan: string;
+  exactUnitQuery: string;
   openToComparable: boolean;
   minPrice: string;
   maxPrice: string;
@@ -57,6 +58,7 @@ export const emptyProfile: BuyerProfile = {
   preferredManufacturer: "",
   preferredModel: "",
   preferredFloorplan: "",
+  exactUnitQuery: "",
   openToComparable: true,
   minPrice: "",
   maxPrice: "",
