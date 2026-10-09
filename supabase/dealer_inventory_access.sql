@@ -27,14 +27,20 @@ begin
     raise exception 'Unauthorized';
   end if;
 
+  -- Subquery avoids Postgres hiding year/price behind the function's output columns.
   return query
   select
-    i.id, i.year, i.manufacturer, i.model, i.floorplan, i.condition,
-    i.price_cents, i.city, i.state, i.stock_number, i.created_at
-  from public.dealer_inventory i
-  where i.dealer_id = p_dealer_id
-    and i.is_active = true
-  order by i.created_at desc;
+    s.id, s.year, s.manufacturer, s.model, s.floorplan, s.condition,
+    s.price_cents, s.city, s.state, s.stock_number, s.created_at
+  from (
+    select
+      i.id, i.year, i.manufacturer, i.model, i.floorplan, i.condition,
+      i.price_cents, i.city, i.state, i.stock_number, i.created_at
+    from public.dealer_inventory i
+    where i.dealer_id = p_dealer_id
+      and i.is_active = true
+  ) s
+  order by s.created_at desc;
 end;
 $$;
 
@@ -136,31 +142,46 @@ as $$
 begin
   return query
   select
-    i.id,
-    i.year,
-    i.manufacturer,
-    i.model,
-    i.floorplan,
-    i.condition,
-    i.price_cents,
-    i.city,
-    i.state,
-    i.stock_number,
-    coalesce(nullif(d.dba, ''), d.legal_business_name, 'Participating dealer')
-  from public.dealer_inventory i
-  join public.dealers d on d.id = i.dealer_id
-  where i.is_active = true
-    and d.status = 'approved'
-    and (p_year is null or i.year = p_year)
-    and (p_manufacturer is null or p_manufacturer = '' or i.manufacturer ilike '%' || p_manufacturer || '%')
-    and (p_model is null or p_model = '' or i.model ilike '%' || p_model || '%')
-    and (
-      p_floorplan is null
-      or p_floorplan = ''
-      or coalesce(i.floorplan, '') ilike '%' || p_floorplan || '%'
-      or replace(coalesce(i.floorplan, ''), ' ', '') ilike '%' || replace(p_floorplan, ' ', '') || '%'
-    )
-  order by i.created_at desc
+    s.id,
+    s.year,
+    s.manufacturer,
+    s.model,
+    s.floorplan,
+    s.condition,
+    s.price_cents,
+    s.city,
+    s.state,
+    s.stock_number,
+    s.dealer_name
+  from (
+    select
+      i.id,
+      i.year,
+      i.manufacturer,
+      i.model,
+      i.floorplan,
+      i.condition,
+      i.price_cents,
+      i.city,
+      i.state,
+      i.stock_number,
+      coalesce(nullif(d.dba, ''), d.legal_business_name, 'Participating dealer') as dealer_name,
+      i.created_at
+    from public.dealer_inventory i
+    join public.dealers d on d.id = i.dealer_id
+    where i.is_active = true
+      and d.status = 'approved'
+      and (p_year is null or i.year = p_year)
+      and (p_manufacturer is null or p_manufacturer = '' or i.manufacturer ilike '%' || p_manufacturer || '%')
+      and (p_model is null or p_model = '' or i.model ilike '%' || p_model || '%')
+      and (
+        p_floorplan is null
+        or p_floorplan = ''
+        or coalesce(i.floorplan, '') ilike '%' || p_floorplan || '%'
+        or replace(coalesce(i.floorplan, ''), ' ', '') ilike '%' || replace(p_floorplan, ' ', '') || '%'
+      )
+  ) s
+  order by s.created_at desc
   limit 50;
 end;
 $$;
