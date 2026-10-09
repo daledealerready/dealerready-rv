@@ -1,6 +1,8 @@
 -- Lets approved dealers add inventory, and lets shoppers search it.
 -- Run once in Supabase SQL Editor.
 
+drop function if exists public.dealer_inventory_list(uuid);
+
 create or replace function public.dealer_inventory_list(p_dealer_id uuid)
 returns table (
   id uuid,
@@ -104,6 +106,8 @@ begin
     and dealer_id = p_dealer_id;
 end;
 $$;
+
+drop function if exists public.search_dealer_inventory(integer, text, text, text);
 
 create or replace function public.search_dealer_inventory(
   p_year integer,
