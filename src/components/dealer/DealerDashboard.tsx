@@ -180,6 +180,12 @@ export function DealerDashboard() {
           MY INVENTORY
         </Link>
         <Link
+          href="/dealer/ads"
+          className="rounded-md border border-fog px-5 py-3 text-sm font-semibold text-ink hover:bg-mist"
+        >
+          HEADER AD
+        </Link>
+        <Link
           href="/dealer/purchased"
           className="rounded-md border border-fog px-5 py-3 text-sm font-semibold text-ink hover:bg-mist"
         >

@@ -26,6 +26,9 @@ const PRICE_TABLE: Record<PriceBand, Record<LeadTier, number>> = {
 
 export const PILOT_MEMBERSHIP_MONTHLY = 499;
 
+/** Pilot price for one header event ad. Runs from the start date through the end date. */
+export const HEADER_AD_SLOT = 99;
+
 export function categoryToTier(category: string): LeadTier | null {
   if (category === "Premier Buyer") return "Premier";
   if (category === "Dealer Ready") return "Dealer Ready";

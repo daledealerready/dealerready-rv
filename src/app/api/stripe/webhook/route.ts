@@ -113,11 +113,17 @@ export async function POST(request: Request) {
       if (type === "membership" || session.mode === "subscription") {
         await activateMembershipFromSession(session);
       }
-      if (type === "lead" || session.mode === "payment") {
-        // Only process lead checkouts tagged as lead, or payment mode with pending row.
-        if (type === "lead" || session.metadata?.buyerId) {
-          await completeLeadCheckout(session);
+      if (type === "header_ad") {
+        const supabase = getSupabaseAdmin();
+        const activated = await supabase.rpc("dealer_activate_header_ad", {
+          p_stripe_session_id: session.id,
+        });
+        if (activated.error) {
+          throw new Error(activated.error.message);
         }
+      }
+      if (type === "lead" || (session.mode === "payment" && session.metadata?.buyerId)) {
+        await completeLeadCheckout(session);
       }
     }
 

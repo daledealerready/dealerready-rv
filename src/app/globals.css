@@ -97,13 +97,29 @@ body {
   animation: soft-pulse 2.8s ease-out infinite;
 }
 
+@keyframes header-ticker {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.header-ticker-track {
+  display: flex;
+  width: max-content;
+  animation: header-ticker 28s linear infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-rise,
   .animate-rise-delay-1,
   .animate-rise-delay-2,
   .animate-rise-delay-3,
   .hero-zoom,
-  .cta-pulse {
+  .cta-pulse,
+  .header-ticker-track {
     animation: none;
   }
 }
