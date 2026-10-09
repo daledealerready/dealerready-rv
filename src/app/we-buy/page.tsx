@@ -56,6 +56,34 @@ export default function WeBuyPage() {
           </p>
         </div>
 
+        <section className="mt-14 max-w-3xl">
+          <h2 className="font-[family-name:var(--font-display)] text-4xl font-semibold tracking-wide text-ink">
+            What we need before we buy
+          </h2>
+          <p className="mt-4 text-lg leading-relaxed text-ink/75">
+            Nearly every purchase is agreed from your photos and video. The unit is usually not seen in person until the transport driver arrives for pickup. Send complete information up front so the offer stays firm and pickup is not delayed.
+          </p>
+          <p className="mt-4 text-lg leading-relaxed text-ink/75">
+            Please be ready with 15 to 20 clear photos:
+          </p>
+          <ul className="mt-4 space-y-2 text-ink/80">
+            <li>Exterior: front, back, and both sides</li>
+            <li>Interior: living area, kitchen, bedroom, and bathroom</li>
+            <li>Close-ups of any damage to furniture, cabinetry, or the outside</li>
+            <li>Windshield, including any chips or cracks</li>
+            <li>Tires, including the date stamp on each sidewall</li>
+            <li>Odometer, if the motorhome is drivable</li>
+            <li>Generator hour meter</li>
+            <li>Batteries, including any date labels</li>
+            <li>Roof, if you can photograph it safely</li>
+            <li>Awning fully open, if it works</li>
+            <li>Vent or specification stickers, usually in a cabinet, behind the driver seat, or on the dashboard</li>
+          </ul>
+          <p className="mt-4 text-lg leading-relaxed text-ink/75">
+            A walk-around video of the whole unit is helpful. If you can, film the same items in the list above. The more complete the information, the stronger and more reliable your purchase number will be.
+          </p>
+        </section>
+
         <div className="mt-12 max-w-3xl">
           <WeBuyForm />
         </div>

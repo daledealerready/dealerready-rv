@@ -68,7 +68,7 @@ export function WeBuyForm() {
           Request received.
         </h2>
         <p className="mt-3 text-ink/75">
-          DealerReady will review your unit and follow up about a purchase offer. This is not a financing application.
+          DealerReady will review your unit and follow up for the photos and video needed to prepare a purchase offer. This is not a financing application.
         </p>
       </div>
     );
@@ -79,6 +79,9 @@ export function WeBuyForm() {
       <h2 className="font-[family-name:var(--font-display)] text-3xl font-semibold tracking-wide text-ink">
         Request a purchase offer
       </h2>
+      <p className="text-sm leading-relaxed text-ink/70">
+        Have 15 to 20 photos ready, and a walk-around video if you can. We will ask for them after this request. Complete photos keep the offer from changing on pickup day.
+      </p>
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="block">
           <span className="mb-2 block text-sm font-semibold text-ink/70">First name</span>
