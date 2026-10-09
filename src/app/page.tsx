@@ -55,6 +55,12 @@ export default function Home() {
               >
                 UPDATE MY PROFILE
               </Link>
+              <Link
+                href="/we-buy"
+                className="inline-flex items-center justify-center rounded-md border border-warm/80 px-7 py-4 text-center text-sm font-semibold tracking-wide text-warm transition hover:bg-white/10 sm:text-base"
+              >
+                WE BUY YOUR RV
+              </Link>
             </div>
           </div>
         </div>
