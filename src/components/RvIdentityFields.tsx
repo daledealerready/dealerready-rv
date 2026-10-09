@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   canonicalMake,
   isKnownMake,
@@ -74,7 +74,8 @@ export function RvIdentityFields({
   modelLabel = "Model",
   className,
   labelClassName = "mb-2 block text-sm font-semibold text-ink/70",
-  hintClassName = "text-sm text-ink/60",
+  hintClassName = "text-sm text-ink/70",
+  linkClassName = "font-semibold text-signal underline",
   showHint = true,
 }: {
   year: string;
@@ -92,8 +93,10 @@ export function RvIdentityFields({
   className?: string;
   labelClassName?: string;
   hintClassName?: string;
+  linkClassName?: string;
   showHint?: boolean;
 }) {
+  const makeInputRef = useRef<HTMLInputElement>(null);
   const [makeIsOther, setMakeIsOther] = useState(() => otherMake(make));
   const [modelIsOther, setModelIsOther] = useState(() => otherModel(make, model));
 
@@ -141,6 +144,24 @@ export function RvIdentityFields({
     }
     setModelIsOther(false);
     onChange({ year, make, model: nextModel });
+  }
+
+  function typeItIn() {
+    setMakeIsOther(true);
+    setModelIsOther(false);
+    const typedMake = make === NOT_SURE ? "" : isKnownMake(make) ? canonicalMake(make) : make;
+    const typedModel = model === NOT_SURE ? "" : model;
+    onChange({ year, make: typedMake, model: typedModel });
+    window.setTimeout(() => makeInputRef.current?.focus(), 0);
+  }
+
+  function chooseFromList() {
+    setMakeIsOther(false);
+    setModelIsOther(false);
+    const listedMake = isKnownMake(make) ? canonicalMake(make) : "";
+    const listedModel =
+      listedMake && modelsForMake(listedMake).includes(model) ? model : "";
+    onChange({ year, make: listedMake, model: listedModel });
   }
 
   const gridClass =
@@ -198,6 +219,7 @@ export function RvIdentityFields({
           <span className={labelClassName}>Type the manufacturer</span>
           <input
             className={inputClass}
+            ref={makeInputRef}
             value={make}
             required={requireMake}
             onChange={(event) => onChange({ year, make: event.target.value, model })}
@@ -217,7 +239,23 @@ export function RvIdentityFields({
       ) : null}
       {showHint ? (
         <p className={`${hintClassName} ${span}`}>
-          Scroll the list and select. Choose Other if yours is not listed.
+          {customMake ? (
+            <>
+              Want the menus instead?{" "}
+              <button type="button" className={linkClassName} onClick={chooseFromList}>
+                Click here
+              </button>{" "}
+              to choose from the list.
+            </>
+          ) : (
+            <>
+              If you cannot find your make and model,{" "}
+              <button type="button" className={linkClassName} onClick={typeItIn}>
+                click here
+              </button>{" "}
+              to type it in.
+            </>
+          )}
         </p>
       ) : null}
     </div>

@@ -59,7 +59,8 @@ function ExactUnitSearchForm({
         requireMake
         requireModel
         labelClassName={`mb-2 block text-sm font-semibold ${hero ? "text-white" : "text-ink/70"}`}
-        hintClassName={`text-sm ${hero ? "text-white/75" : "text-ink/60"}`}
+        hintClassName={`text-sm ${hero ? "text-white/90" : "text-ink/70"}`}
+        linkClassName={`font-semibold underline ${hero ? "text-warm" : "text-signal"}`}
         onChange={(next) => {
           setYear(next.year);
           setMake(next.make);
