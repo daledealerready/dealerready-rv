@@ -7,7 +7,7 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 
 type AdBody = {
   token?: string;
-  action?: "list" | "create" | "confirm" | "logo";
+  action?: "list" | "create" | "confirm" | "logo" | "update";
   message?: string;
   startsOn?: string;
   endsOn?: string;
@@ -98,6 +98,66 @@ export async function POST(request: Request) {
         p_logo: logo,
       });
       if (saved.error) return failure(saved.error, "Could not save the logo.");
+    }
+
+    if (action === "update") {
+      const adId = clean(body.adId);
+      const message = clean(body.message);
+      const startsOn = clean(body.startsOn);
+      const endsOn = clean(body.endsOn);
+      if (!adId) {
+        return NextResponse.json({ error: "Choose an ad to edit." }, { status: 400 });
+      }
+      if (message.length < 3 || message.length > 140) {
+        return NextResponse.json(
+          { error: "Write a short event message, up to 140 characters." },
+          { status: 400 },
+        );
+      }
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(startsOn) || !/^\d{4}-\d{2}-\d{2}$/.test(endsOn)) {
+        return NextResponse.json(
+          { error: "Choose a start date and an end date." },
+          { status: 400 },
+        );
+      }
+      if (endsOn < startsOn) {
+        return NextResponse.json(
+          { error: "End date must be on or after the start date." },
+          { status: 400 },
+        );
+      }
+      let logo = "";
+      try {
+        logo = assertLogo(body.logo?.trim() || "");
+      } catch (logoError) {
+        const logoMessage =
+          logoError instanceof Error ? logoError.message : "Could not use that logo.";
+        return NextResponse.json({ error: logoMessage }, { status: 400 });
+      }
+      const updated = await supabase.rpc("dealer_update_header_ad", {
+        p_dealer_id: session.dealerId,
+        p_ad_id: adId,
+        p_message: message,
+        p_starts_on: startsOn,
+        p_ends_on: endsOn,
+        p_logo: logo,
+      });
+      if (updated.error) {
+        const lower = updated.error.message.toLowerCase();
+        if (
+          lower.includes("dealer_update_header_ad") ||
+          lower.includes("could not find the function")
+        ) {
+          return NextResponse.json(
+            {
+              error:
+                "Ad editing is not installed yet. Run header_ads_edit.sql in Supabase.",
+            },
+            { status: 500 },
+          );
+        }
+        return failure(updated.error, "Could not update the ad.");
+      }
     }
 
     if (action === "create") {
@@ -194,8 +254,8 @@ export async function POST(request: Request) {
     const ads = (Array.isArray(listed.data) ? listed.data : []).map((row) => ({
       id: row.id as string,
       message: row.message as string,
-      startsOn: row.starts_on as string,
-      endsOn: row.ends_on as string,
+      startsOn: String(row.starts_on || "").slice(0, 10),
+      endsOn: String(row.ends_on || "").slice(0, 10),
       price: Math.round(Number(row.price_cents || 0) / 100),
       status: row.status as string,
       logoUrl: (row.logo_url as string | null) || null,

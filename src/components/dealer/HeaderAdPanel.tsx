@@ -21,6 +21,124 @@ type Ad = {
 const inputClass =
   "w-full rounded-md border border-fog bg-white px-4 py-3 text-base text-ink outline-none focus:border-signal";
 
+function AdEditor({
+  ad,
+  token,
+  onSaved,
+  onError,
+}: {
+  ad: Ad;
+  token: string;
+  onSaved: (text: string) => Promise<void>;
+  onError: (text: string) => void;
+}) {
+  const [message, setMessage] = useState(ad.message);
+  const [startsOn, setStartsOn] = useState(ad.startsOn);
+  const [endsOn, setEndsOn] = useState(ad.endsOn);
+  const [logo, setLogo] = useState("");
+  const [logoName, setLogoName] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setMessage(ad.message);
+    setStartsOn(ad.startsOn);
+    setEndsOn(ad.endsOn);
+  }, [ad.message, ad.startsOn, ad.endsOn]);
+
+  if (ad.status !== "active") {
+    return (
+      <li className="rounded-md border border-fog bg-white p-4">
+        <p className="font-semibold text-ink">{ad.message}</p>
+        <p className="mt-1 text-sm text-ink/70">
+          {labelFor(ad)} · {ad.startsOn} through {ad.endsOn} · ${ad.price}
+        </p>
+      </li>
+    );
+  }
+
+  return (
+    <li className="rounded-md border border-fog bg-white p-4">
+      <p className="text-sm font-semibold text-signal">{labelFor(ad)} · ${ad.price} paid</p>
+      <label className="mt-3 block">
+        <span className="mb-2 block text-sm font-semibold text-ink/70">Ad wording</span>
+        <input className={inputClass} maxLength={140} value={message} onChange={(event) => setMessage(event.target.value)} />
+      </label>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <label className="block">
+          <span className="mb-2 block text-sm font-semibold text-ink/70">Starts</span>
+          <input className={inputClass} type="date" value={startsOn} onChange={(event) => setStartsOn(event.target.value)} />
+        </label>
+        <label className="block">
+          <span className="mb-2 block text-sm font-semibold text-ink/70">Ends</span>
+          <input className={inputClass} type="date" value={endsOn} onChange={(event) => setEndsOn(event.target.value)} />
+        </label>
+      </div>
+      <div className="mt-3 flex items-center gap-3">
+        {ad.logoUrl || logo ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={logo || ad.logoUrl || ""} alt="" className="h-12 w-auto rounded-md bg-ink object-contain px-2" />
+        ) : null}
+        <label className="text-sm font-semibold text-signal">
+          {ad.logoUrl ? "Change logo" : "Add logo"}
+          <input
+            className="mt-2 block w-full text-sm font-normal text-ink"
+            type="file"
+            accept="image/*"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (!file) return;
+              void fileToLogoDataUrl(file)
+                .then((dataUrl) => {
+                  setLogo(dataUrl);
+                  setLogoName(file.name);
+                })
+                .catch((logoError: unknown) => {
+                  onError(logoError instanceof Error ? logoError.message : "Could not use that logo.");
+                });
+            }}
+          />
+          {logoName ? <span className="mt-1 block font-normal text-ink/60">{logoName}</span> : null}
+        </label>
+      </div>
+      <button
+        type="button"
+        disabled={saving}
+        onClick={() => {
+          setSaving(true);
+          void fetch("/api/dealer/ads", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              token,
+              action: "update",
+              adId: ad.id,
+              message,
+              startsOn,
+              endsOn,
+              logo,
+            }),
+          })
+            .then(async (response) => {
+              const data = (await response.json()) as { ok?: boolean; error?: string };
+              if (!response.ok || !data.ok) {
+                onError(data.error || "Could not update the ad.");
+                return;
+              }
+              setLogo("");
+              setLogoName("");
+              await onSaved("Ad updated. Refresh the homepage to see the new wording.");
+            })
+            .catch(() => onError("Network error. Please try again."))
+            .finally(() => setSaving(false));
+        }}
+        className="mt-4 rounded-md bg-signal px-5 py-3 text-sm font-bold tracking-wide text-white hover:bg-signal-deep disabled:opacity-60"
+      >
+        {saving ? "SAVING..." : "SAVE CHANGES"}
+      </button>
+    </li>
+  );
+}
+
 function labelFor(ad: Ad) {
   const today = new Date().toISOString().slice(0, 10);
   if (ad.status !== "active") return "Waiting for payment";
@@ -224,57 +342,20 @@ export function HeaderAdPanel() {
       ) : (
         <ul className="mt-4 space-y-3">
           {ads.map((ad) => (
-            <li key={ad.id} className="rounded-md border border-fog bg-white p-4">
-              <div className="flex items-center gap-3">
-                {ad.logoUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={ad.logoUrl} alt="" className="h-12 w-auto rounded-md bg-ink object-contain px-2" />
-                ) : null}
-                <div>
-                  <p className="font-semibold text-ink">{ad.message}</p>
-                  <p className="mt-1 text-sm text-ink/70">
-                    {labelFor(ad)} · {ad.startsOn} through {ad.endsOn} · ${ad.price}
-                  </p>
-                </div>
-              </div>
-              {ad.status === "active" ? (
-                <label className="mt-3 block text-sm font-semibold text-signal">
-                  {ad.logoUrl ? "Change logo" : "Add logo"}
-                  <input
-                    className="mt-2 block w-full text-sm font-normal text-ink"
-                    type="file"
-                    accept="image/*"
-                    onChange={(event) => {
-                      const file = event.target.files?.[0];
-                      if (!file) return;
-                      void fileToLogoDataUrl(file)
-                        .then(async (dataUrl) => {
-                          const response = await fetch("/api/dealer/ads", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                              token,
-                              action: "logo",
-                              adId: ad.id,
-                              logo: dataUrl,
-                            }),
-                          });
-                          const data = (await response.json()) as { ok?: boolean; error?: string };
-                          if (!response.ok || !data.ok) {
-                            setError(data.error || "Could not save the logo.");
-                            return;
-                          }
-                          setNotice("Logo added to your header ad.");
-                          await load(token);
-                        })
-                        .catch((logoError: unknown) => {
-                          setError(logoError instanceof Error ? logoError.message : "Could not use that logo.");
-                        });
-                    }}
-                  />
-                </label>
-              ) : null}
-            </li>
+            <AdEditor
+              key={ad.id}
+              ad={ad}
+              token={token}
+              onSaved={async (text) => {
+                setNotice(text);
+                setError("");
+                await load(token);
+              }}
+              onError={(text) => {
+                setError(text);
+                setNotice("");
+              }}
+            />
           ))}
         </ul>
       )}
