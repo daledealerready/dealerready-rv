@@ -17,8 +17,61 @@ type InventoryBody = {
   stockNumber?: string;
 };
 
+type InventoryRow = {
+  id: string;
+  year: number | null;
+  manufacturer: string;
+  model: string;
+  floorplan: string | null;
+  condition: string | null;
+  price_cents: number | null;
+  city: string | null;
+  state: string | null;
+  stock_number: string | null;
+};
+
 function clean(value: string | undefined) {
   return value?.trim() || "";
+}
+
+function mapUnits(rows: InventoryRow[]) {
+  return rows.map((row) => ({
+    id: row.id,
+    year: row.year,
+    manufacturer: row.manufacturer,
+    model: row.model,
+    floorplan: row.floorplan,
+    condition: row.condition,
+    price: row.price_cents == null ? null : Math.round(row.price_cents / 100),
+    city: row.city,
+    state: row.state,
+    stockNumber: row.stock_number,
+  }));
+}
+
+function failure(error: { message?: string } | null, fallback: string) {
+  const message = error?.message || fallback;
+  const lower = message.toLowerCase();
+  if (lower.includes("unauthorized")) {
+    return NextResponse.json(
+      { error: "Dealer account is not approved." },
+      { status: 401 },
+    );
+  }
+  if (
+    lower.includes("dealer_inventory") ||
+    lower.includes("could not find the function") ||
+    lower.includes("schema cache")
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          "Inventory access SQL is not installed yet. Run dealer_inventory_access.sql in Supabase.",
+      },
+      { status: 500 },
+    );
+  }
+  return NextResponse.json({ error: message }, { status: 500 });
 }
 
 export async function POST(request: Request) {
@@ -33,19 +86,6 @@ export async function POST(request: Request) {
     }
 
     const supabase = getSupabaseAdmin();
-    const dealerRes = await supabase
-      .from("dealers")
-      .select("id, status, city, state")
-      .eq("id", session.dealerId)
-      .maybeSingle();
-
-    if (dealerRes.error || !dealerRes.data || dealerRes.data.status !== "approved") {
-      return NextResponse.json(
-        { error: "Dealer account is not approved." },
-        { status: 401 },
-      );
-    }
-
     const action = body.action || "list";
 
     if (action === "remove") {
@@ -53,18 +93,11 @@ export async function POST(request: Request) {
       if (!id) {
         return NextResponse.json({ error: "Missing unit." }, { status: 400 });
       }
-      const { error } = await supabase
-        .from("dealer_inventory")
-        .update({ is_active: false })
-        .eq("id", id)
-        .eq("dealer_id", session.dealerId);
-      if (error) {
-        return NextResponse.json(
-          { error: error.message || "Could not remove unit." },
-          { status: 500 },
-        );
-      }
-      return NextResponse.json({ ok: true });
+      const removed = await supabase.rpc("dealer_inventory_remove", {
+        p_dealer_id: session.dealerId,
+        p_unit_id: id,
+      });
+      if (removed.error) return failure(removed.error, "Could not remove unit.");
     }
 
     if (action === "add") {
@@ -96,61 +129,28 @@ export async function POST(request: Request) {
         );
       }
 
-      const { error } = await supabase.from("dealer_inventory").insert({
-        dealer_id: session.dealerId,
-        year,
-        manufacturer,
-        model,
-        floorplan: clean(body.floorplan) || null,
-        condition: clean(body.condition) || null,
-        price_cents: price == null ? null : Math.round(price * 100),
-        city: clean(body.city) || dealerRes.data.city || null,
-        state: clean(body.state) || dealerRes.data.state || null,
-        stock_number: clean(body.stockNumber) || null,
-        is_active: true,
+      const added = await supabase.rpc("dealer_inventory_add", {
+        p_dealer_id: session.dealerId,
+        p_year: year,
+        p_manufacturer: manufacturer,
+        p_model: model,
+        p_floorplan: clean(body.floorplan),
+        p_condition: clean(body.condition),
+        p_price_cents: price == null ? null : Math.round(price * 100),
+        p_city: clean(body.city),
+        p_state: clean(body.state),
+        p_stock_number: clean(body.stockNumber),
       });
-      if (error) {
-        const message = error.message || "Could not add unit.";
-        if (message.toLowerCase().includes("dealer_inventory")) {
-          return NextResponse.json(
-            { error: "Inventory SQL is not installed yet. Run dealer_inventory.sql." },
-            { status: 500 },
-          );
-        }
-        return NextResponse.json({ error: message }, { status: 500 });
-      }
+      if (added.error) return failure(added.error, "Could not add unit.");
     }
 
-    const { data, error } = await supabase
-      .from("dealer_inventory")
-      .select(
-        "id, year, manufacturer, model, floorplan, condition, price_cents, city, state, stock_number, created_at",
-      )
-      .eq("dealer_id", session.dealerId)
-      .eq("is_active", true)
-      .order("created_at", { ascending: false });
+    const listed = await supabase.rpc("dealer_inventory_list", {
+      p_dealer_id: session.dealerId,
+    });
+    if (listed.error) return failure(listed.error, "Could not load inventory.");
 
-    if (error) {
-      return NextResponse.json(
-        { error: error.message || "Could not load inventory." },
-        { status: 500 },
-      );
-    }
-
-    const units = (data || []).map((row) => ({
-      id: row.id,
-      year: row.year,
-      manufacturer: row.manufacturer,
-      model: row.model,
-      floorplan: row.floorplan,
-      condition: row.condition,
-      price: row.price_cents == null ? null : Math.round(row.price_cents / 100),
-      city: row.city,
-      state: row.state,
-      stockNumber: row.stock_number,
-    }));
-
-    return NextResponse.json({ ok: true, units });
+    const rows = (Array.isArray(listed.data) ? listed.data : []) as InventoryRow[];
+    return NextResponse.json({ ok: true, units: mapUnits(rows) });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unexpected server error";
     return NextResponse.json({ error: message }, { status: 500 });
