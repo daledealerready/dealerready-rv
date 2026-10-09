@@ -23,7 +23,7 @@ export default function Home() {
         <SiteHeader />
 
         <div className="relative z-10 mx-auto flex min-h-[100svh] w-full max-w-7xl flex-col justify-end px-5 pb-16 pt-28 md:justify-center md:px-8 md:pb-24 md:pt-24">
-          <div className="max-w-2xl">
+          <div className="max-w-3xl">
             <p className="animate-rise font-[family-name:var(--font-display)] text-5xl font-bold leading-none tracking-[0.03em] text-white sm:text-6xl md:text-7xl lg:text-8xl">
               DealerReady <span className="text-warm">RV</span>
             </p>

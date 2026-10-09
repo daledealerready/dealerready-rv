@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { RvIdentityFields } from "@/components/RvIdentityFields";
 
 const CATEGORIES = [
   "Class A Diesel",
@@ -113,20 +114,16 @@ export function WeBuyForm() {
           ))}
         </select>
       </label>
-      <div className="grid gap-4 sm:grid-cols-3">
-        <label className="block">
-          <span className="mb-2 block text-sm font-semibold text-ink/70">Year</span>
-          <input className={inputClass} inputMode="numeric" value={year} onChange={(event) => setYear(event.target.value)} />
-        </label>
-        <label className="block">
-          <span className="mb-2 block text-sm font-semibold text-ink/70">Make</span>
-          <input className={inputClass} value={make} onChange={(event) => setMake(event.target.value)} />
-        </label>
-        <label className="block">
-          <span className="mb-2 block text-sm font-semibold text-ink/70">Model</span>
-          <input className={inputClass} value={model} onChange={(event) => setModel(event.target.value)} />
-        </label>
-      </div>
+      <RvIdentityFields
+        year={year}
+        make={make}
+        model={model}
+        onChange={(next) => {
+          setYear(next.year);
+          setMake(next.make);
+          setModel(next.model);
+        }}
+      />
       <label className="block">
         <span className="mb-2 block text-sm font-semibold text-ink/70">ZIP code</span>
         <input className={inputClass} value={zip} onChange={(event) => setZip(event.target.value)} />

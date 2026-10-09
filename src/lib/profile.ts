@@ -1,3 +1,5 @@
+import { NOT_SURE, OTHER, RV_MAKES } from "@/lib/rv-catalog";
+
 export const TOTAL_QUESTIONS = 12;
 
 export type BuyerProfile = {
@@ -125,21 +127,7 @@ export const RV_TYPE_OPTIONS = [
 
 export const CONDITION_OPTIONS = ["New", "Used", "Either", "Not sure"];
 
-export const BRAND_OPTIONS = [
-  "Tiffin",
-  "Entegra",
-  "Newmar",
-  "Grand Design",
-  "Forest River",
-  "Jayco",
-  "Keystone",
-  "Winnebago",
-  "Thor",
-  "American Coach",
-  "Airstream",
-  "Other",
-  "Not sure yet",
-];
+export const BRAND_OPTIONS = [...RV_MAKES, OTHER, NOT_SURE];
 
 export const DOWN_PAYMENT_OPTIONS = [
   "Under $5,000",

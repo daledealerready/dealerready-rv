@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { RvIdentityFields } from "@/components/RvIdentityFields";
 
 const SESSION_KEY = "dealerready-dealer-token";
 
@@ -33,6 +34,7 @@ export function InventoryPanel() {
   const [year, setYear] = useState("");
   const [manufacturer, setManufacturer] = useState("");
   const [model, setModel] = useState("");
+  const [formVersion, setFormVersion] = useState(0);
   const [floorplan, setFloorplan] = useState("");
   const [condition, setCondition] = useState("New");
   const [price, setPrice] = useState("");
@@ -126,6 +128,7 @@ export function InventoryPanel() {
       setYear("");
       setManufacturer("");
       setModel("");
+      setFormVersion((current) => current + 1);
       setFloorplan("");
       setPrice("");
       setStockNumber("");
@@ -174,18 +177,22 @@ export function InventoryPanel() {
       </p>
 
       <form onSubmit={(event) => void addUnit(event)} className="mt-8 grid gap-4 rounded-md border border-fog bg-white p-5 sm:grid-cols-2">
-        <label className="block">
-          <span className="mb-2 block text-sm font-semibold text-ink/70">Year</span>
-          <input className={inputClass} inputMode="numeric" placeholder="2027" value={year} onChange={(e) => setYear(e.target.value)} />
-        </label>
-        <label className="block">
-          <span className="mb-2 block text-sm font-semibold text-ink/70">Brand</span>
-          <input className={inputClass} placeholder="Tiffin" value={manufacturer} onChange={(e) => setManufacturer(e.target.value)} required />
-        </label>
-        <label className="block">
-          <span className="mb-2 block text-sm font-semibold text-ink/70">Model</span>
-          <input className={inputClass} placeholder="Phaeton" value={model} onChange={(e) => setModel(e.target.value)} required />
-        </label>
+        <div className="sm:col-span-2">
+          <RvIdentityFields
+            key={formVersion}
+            year={year}
+            make={manufacturer}
+            model={model}
+            requireYear
+            requireMake
+            requireModel
+            onChange={(next) => {
+              setYear(next.year);
+              setManufacturer(next.make);
+              setModel(next.model);
+            }}
+          />
+        </div>
         <label className="block">
           <span className="mb-2 block text-sm font-semibold text-ink/70">Floorplan</span>
           <input className={inputClass} placeholder="40 IH" value={floorplan} onChange={(e) => setFloorplan(e.target.value)} />

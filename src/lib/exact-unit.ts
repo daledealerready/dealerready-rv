@@ -1,4 +1,4 @@
-import { BRAND_OPTIONS } from "@/lib/profile";
+import { canonicalMake, SEARCH_MAKES } from "@/lib/rv-catalog";
 
 export type ExactUnit = {
   raw: string;
@@ -9,9 +9,7 @@ export type ExactUnit = {
   label: string;
 };
 
-const MULTI_WORD_BRANDS = [...BRAND_OPTIONS]
-  .filter((brand) => brand !== "Other" && brand !== "Not sure yet")
-  .sort((a, b) => b.length - a.length);
+const MULTI_WORD_BRANDS = SEARCH_MAKES;
 
 export function parseExactUnit(rawQuery: string): ExactUnit {
   const raw = rawQuery.replace(/\s+/g, " ").trim();
@@ -32,7 +30,7 @@ export function parseExactUnit(rawQuery: string): ExactUnit {
       lowerRest === lowerBrand ||
       lowerRest.startsWith(`${lowerBrand} `)
     ) {
-      manufacturer = brand;
+      manufacturer = canonicalMake(brand);
       rest = rest.slice(brand.length).trim();
       break;
     }

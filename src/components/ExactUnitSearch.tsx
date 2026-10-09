@@ -1,7 +1,14 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { RvIdentityFields } from "@/components/RvIdentityFields";
+import { parseExactUnit } from "@/lib/exact-unit";
+
+const heroInputClass =
+  "w-full rounded-md border border-white/30 bg-white px-4 py-4 text-base text-ink outline-none placeholder:text-ink/40 focus:border-signal";
+const pageInputClass =
+  "w-full rounded-md border border-fog bg-white px-4 py-3 text-base text-ink outline-none placeholder:text-ink/40 focus:border-signal";
 
 export function ExactUnitSearch({
   initialQuery = "",
@@ -10,55 +17,79 @@ export function ExactUnitSearch({
   initialQuery?: string;
   variant?: "hero" | "page";
 }) {
+  const parsed = useMemo(() => parseExactUnit(initialQuery), [initialQuery]);
+  return <ExactUnitSearchForm key={initialQuery} parsed={parsed} variant={variant} />;
+}
+
+function ExactUnitSearchForm({
+  parsed,
+  variant,
+}: {
+  parsed: ReturnType<typeof parseExactUnit>;
+  variant: "hero" | "page";
+}) {
   const router = useRouter();
-  const [query, setQuery] = useState(initialQuery);
+  const [year, setYear] = useState(parsed.year);
+  const [make, setMake] = useState(parsed.manufacturer);
+  const [model, setModel] = useState(parsed.model);
+  const [floorplan, setFloorplan] = useState(parsed.floorplan);
   const [error, setError] = useState("");
+  const hero = variant === "hero";
 
   function onSubmit(event: React.FormEvent) {
     event.preventDefault();
-    const trimmed = query.trim();
-    if (trimmed.length < 3) {
-      setError("Enter the year, brand, and model. Example: 2027 Tiffin Phaeton 40 IH");
+    if (!make.trim() || !model.trim()) {
+      setError("Select the make and model. Add the year if you know it.");
       return;
     }
     setError("");
-    router.push(`/search?q=${encodeURIComponent(trimmed)}`);
+    const query = [year, make, model, floorplan].filter((part) => part.trim()).join(" ");
+    router.push(`/search?q=${encodeURIComponent(query)}`);
   }
 
-  const hero = variant === "hero";
-
   return (
-    <form onSubmit={onSubmit} className={hero ? "mt-8 max-w-xl" : "w-full"}>
-      <label className="block">
-        <span
-          className={`mb-2 block text-sm font-semibold ${
-            hero ? "text-white" : "text-ink"
-          }`}
-        >
-          Know the exact unit?
+    <form onSubmit={onSubmit} className={hero ? "mt-8 max-w-3xl" : "w-full"}>
+      <p className={`mb-3 text-sm font-semibold ${hero ? "text-white" : "text-ink"}`}>
+        Know the exact unit?
+      </p>
+      <RvIdentityFields
+        year={year}
+        make={make}
+        model={model}
+        requireMake
+        requireModel
+        labelClassName={`mb-2 block text-sm font-semibold ${hero ? "text-white" : "text-ink/70"}`}
+        hintClassName={`text-sm ${hero ? "text-white/75" : "text-ink/60"}`}
+        onChange={(next) => {
+          setYear(next.year);
+          setMake(next.make);
+          setModel(next.model);
+          setError("");
+        }}
+      />
+      <label className="mt-3 block">
+        <span className={`mb-2 block text-sm font-semibold ${hero ? "text-white" : "text-ink/70"}`}>
+          Floorplan, optional
         </span>
-        <span className="flex flex-col gap-2 sm:flex-row">
-          <input
-            value={query}
-            onChange={(event) => {
-              setQuery(event.target.value);
-              setError("");
-            }}
-            placeholder="2027 Tiffin Phaeton 40 IH"
-            className="w-full rounded-md border border-white/30 bg-white px-4 py-4 text-base text-ink outline-none placeholder:text-ink/40 focus:border-signal"
-          />
-          <button
-            type="submit"
-            className="rounded-md bg-signal px-6 py-4 text-sm font-bold tracking-wide text-white hover:bg-signal-deep"
-          >
-            SEARCH
-          </button>
-        </span>
+        <input
+          className={hero ? heroInputClass : pageInputClass}
+          value={floorplan}
+          placeholder="40 IH"
+          onChange={(event) => setFloorplan(event.target.value)}
+        />
       </label>
+      <button
+        type="submit"
+        className="mt-3 rounded-md bg-signal px-6 py-4 text-sm font-bold tracking-wide text-white hover:bg-signal-deep"
+      >
+        SEARCH
+      </button>
       <p className={`mt-2 text-sm ${hero ? "text-white/75" : "text-ink/60"}`}>
         Search units listed by dealerships on DealerReady.
       </p>
-      {error ? <p className="mt-2 text-sm font-medium text-warm">{error}</p> : null}
+      {error ? (
+        <p className={`mt-2 text-sm font-medium ${hero ? "text-warm" : "text-red-700"}`}>{error}</p>
+      ) : null}
     </form>
   );
 }

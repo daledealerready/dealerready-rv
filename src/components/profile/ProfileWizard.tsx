@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
-  BRAND_OPTIONS,
   COBUYER_OPTIONS,
   CONDITION_OPTIONS,
   CONTACT_PREF_OPTIONS,
@@ -28,6 +27,7 @@ import {
   saveBuyerCode,
   saveProfile,
 } from "@/lib/profile-storage";
+import { RvIdentityFields, RvYearSelect } from "@/components/RvIdentityFields";
 
 type Phase = "questions" | "verify" | "review" | "complete";
 
@@ -755,21 +755,17 @@ function QuestionStep({
           {(profile.condition === "Used" || profile.condition === "Either") && (
             <div className="mt-8 grid gap-4 sm:grid-cols-2">
               <Field label="Earliest year">
-                <input
-                  className={inputClass}
-                  inputMode="numeric"
-                  placeholder="2018"
+                <RvYearSelect
                   value={profile.earliestYear}
-                  onChange={(e) => update("earliestYear", e.target.value)}
+                  placeholder="Any year"
+                  onChange={(year) => update("earliestYear", year)}
                 />
               </Field>
               <Field label="Newest year">
-                <input
-                  className={inputClass}
-                  inputMode="numeric"
-                  placeholder="2026"
+                <RvYearSelect
                   value={profile.newestYear}
-                  onChange={(e) => update("newestYear", e.target.value)}
+                  placeholder="Any year"
+                  onChange={(year) => update("newestYear", year)}
                 />
               </Field>
             </div>
@@ -783,32 +779,19 @@ function QuestionStep({
             Do you have a brand or model in mind?
           </h1>
           <div className="mt-8 space-y-4">
-            <Field label="Preferred manufacturer">
-              <select
-                className={inputClass}
-                value={profile.preferredManufacturer}
-                onChange={(e) => update("preferredManufacturer", e.target.value)}
-              >
-                <option value="">Select one</option>
-                {(BRAND_OPTIONS.includes(profile.preferredManufacturer) ||
-                !profile.preferredManufacturer
-                  ? BRAND_OPTIONS
-                  : [profile.preferredManufacturer, ...BRAND_OPTIONS]
-                ).map((brand) => (
-                  <option key={brand} value={brand}>
-                    {brand}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Preferred model">
-              <input
-                className={inputClass}
-                placeholder="Optional"
-                value={profile.preferredModel}
-                onChange={(e) => update("preferredModel", e.target.value)}
-              />
-            </Field>
+            <RvIdentityFields
+              year=""
+              make={profile.preferredManufacturer}
+              model={profile.preferredModel}
+              showYear={false}
+              allowNotSure
+              makeLabel="Preferred manufacturer"
+              modelLabel="Preferred model"
+              onChange={(next) => {
+                update("preferredManufacturer", next.make);
+                update("preferredModel", next.model);
+              }}
+            />
             <Field label="Preferred floorplan">
               <input
                 className={inputClass}
@@ -932,27 +915,21 @@ function QuestionStep({
           </div>
           {(profile.hasTrade === "Yes" || profile.hasTrade === "Maybe") && (
             <div className="mt-8 grid gap-4 sm:grid-cols-2">
-              <Field label="Year">
-                <input
-                  className={inputClass}
-                  value={profile.tradeYear}
-                  onChange={(e) => update("tradeYear", e.target.value)}
+              <div className="sm:col-span-2">
+                <RvIdentityFields
+                  year={profile.tradeYear}
+                  make={profile.tradeMake}
+                  model={profile.tradeModel}
+                  yearLabel="Year"
+                  makeLabel="Make"
+                  modelLabel="Model"
+                  onChange={(next) => {
+                    update("tradeYear", next.year);
+                    update("tradeMake", next.make);
+                    update("tradeModel", next.model);
+                  }}
                 />
-              </Field>
-              <Field label="Manufacturer">
-                <input
-                  className={inputClass}
-                  value={profile.tradeMake}
-                  onChange={(e) => update("tradeMake", e.target.value)}
-                />
-              </Field>
-              <Field label="Model">
-                <input
-                  className={inputClass}
-                  value={profile.tradeModel}
-                  onChange={(e) => update("tradeModel", e.target.value)}
-                />
-              </Field>
+              </div>
               <Field label="Mileage">
                 <input
                   className={inputClass}
