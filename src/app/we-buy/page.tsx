@@ -77,7 +77,7 @@ export default function WeBuyPage() {
             <li>Batteries, including any date labels</li>
             <li>Roof, if you can photograph it safely</li>
             <li>Awning fully open, if it works</li>
-            <li>Vent or specification stickers, usually in a cabinet, behind the driver seat, or on the dashboard</li>
+            <li>VIN or serial number, usually on a sticker in a cabinet, behind the driver seat, or on the dashboard</li>
           </ul>
           <p className="mt-4 text-lg leading-relaxed text-ink/75">
             A walk-around video of the whole unit is helpful. If you can, film the same items in the list above. The more complete the information, the stronger and more reliable your purchase number will be.
