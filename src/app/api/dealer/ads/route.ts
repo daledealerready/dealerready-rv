@@ -7,7 +7,7 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 
 type AdBody = {
   token?: string;
-  action?: "list" | "create" | "confirm" | "logo" | "update";
+  action?: "list" | "create" | "confirm" | "logo" | "update" | "stop";
   message?: string;
   startsOn?: string;
   endsOn?: string;
@@ -157,6 +157,33 @@ export async function POST(request: Request) {
           );
         }
         return failure(updated.error, "Could not update the ad.");
+      }
+    }
+
+    if (action === "stop") {
+      const adId = clean(body.adId);
+      if (!adId) {
+        return NextResponse.json({ error: "Choose an ad to stop." }, { status: 400 });
+      }
+      const stopped = await supabase.rpc("dealer_stop_header_ad", {
+        p_dealer_id: session.dealerId,
+        p_ad_id: adId,
+      });
+      if (stopped.error) {
+        const lower = stopped.error.message.toLowerCase();
+        if (
+          lower.includes("dealer_stop_header_ad") ||
+          lower.includes("could not find the function")
+        ) {
+          return NextResponse.json(
+            {
+              error:
+                "Stop ad is not installed yet. Run header_ads_edit.sql in Supabase.",
+            },
+            { status: 500 },
+          );
+        }
+        return failure(stopped.error, "Could not stop the ad.");
       }
     }
 

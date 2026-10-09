@@ -38,11 +38,12 @@ function AdEditor({
   const [logo, setLogo] = useState("");
   const [logoName, setLogoName] = useState("");
   const [saving, setSaving] = useState(false);
+  const [cardNotice, setCardNotice] = useState("");
 
   useEffect(() => {
     setMessage(ad.message);
-    setStartsOn(ad.startsOn);
-    setEndsOn(ad.endsOn);
+    setStartsOn(ad.startsOn.slice(0, 10));
+    setEndsOn(ad.endsOn.slice(0, 10));
   }, [ad.message, ad.startsOn, ad.endsOn]);
 
   if (ad.status !== "active") {
@@ -55,6 +56,9 @@ function AdEditor({
       </li>
     );
   }
+
+  const today = new Date().toISOString().slice(0, 10);
+  const startsLater = startsOn > today;
 
   return (
     <li className="rounded-md border border-fog bg-white p-4">
@@ -119,14 +123,29 @@ function AdEditor({
             }),
           })
             .then(async (response) => {
-              const data = (await response.json()) as { ok?: boolean; error?: string };
+              const data = (await response.json()) as {
+                ok?: boolean;
+                error?: string;
+                ads?: Ad[];
+              };
               if (!response.ok || !data.ok) {
                 onError(data.error || "Could not update the ad.");
+                setCardNotice("");
+                return;
+              }
+              const saved = (data.ads || []).find((item) => item.id === ad.id);
+              if (!saved || saved.message !== message.trim()) {
+                onError("The new wording did not save. Run header_ads_edit.sql in Supabase, then try again.");
                 return;
               }
               setLogo("");
               setLogoName("");
-              await onSaved("Ad updated. Refresh the homepage to see the new wording.");
+              setCardNotice("Saved. This wording is now stored on the ad.");
+              await onSaved(
+                startsLater
+                  ? "Saved. This ad stays off the website until the start date."
+                  : "Saved. Refresh the homepage to see the new wording.",
+              );
             })
             .catch(() => onError("Network error. Please try again."))
             .finally(() => setSaving(false));
@@ -135,12 +154,50 @@ function AdEditor({
       >
         {saving ? "SAVING..." : "SAVE CHANGES"}
       </button>
+      <button
+        type="button"
+        disabled={saving}
+        onClick={() => {
+          if (!window.confirm("Stop this ad now? It will leave the website immediately.")) return;
+          setSaving(true);
+          void fetch("/api/dealer/ads", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token, action: "stop", adId: ad.id }),
+          })
+            .then(async (response) => {
+              const data = (await response.json()) as { ok?: boolean; error?: string; ads?: Ad[] };
+              if (!response.ok || !data.ok) {
+                onError(data.error || "Could not stop the ad.");
+                return;
+              }
+              const saved = (data.ads || []).find((item) => item.id === ad.id);
+              if (saved && saved.status !== "stopped") {
+                onError("The ad did not stop. Run header_ads_edit.sql in Supabase, then try again.");
+                return;
+              }
+              await onSaved("Ad stopped. It is off the website.");
+            })
+            .catch(() => onError("Network error. Please try again."))
+            .finally(() => setSaving(false));
+        }}
+        className="mt-3 rounded-md border border-red-700 px-5 py-3 text-sm font-bold tracking-wide text-red-700 disabled:opacity-60"
+      >
+        STOP AD
+      </button>
+      {startsLater ? (
+        <p className="mt-3 text-sm text-ink/70">
+          This ad will not show on the website until {startsOn}.
+        </p>
+      ) : null}
+      {cardNotice ? <p className="mt-3 text-sm font-semibold text-signal">{cardNotice}</p> : null}
     </li>
   );
 }
 
 function labelFor(ad: Ad) {
   const today = new Date().toISOString().slice(0, 10);
+  if (ad.status === "stopped") return "Stopped";
   if (ad.status !== "active") return "Waiting for payment";
   if (ad.endsOn < today) return "Ended";
   if (ad.startsOn > today) return "Scheduled";

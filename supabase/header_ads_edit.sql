@@ -43,3 +43,28 @@ $$;
 
 revoke all on function public.dealer_update_header_ad(uuid, uuid, text, date, date, text) from public;
 grant execute on function public.dealer_update_header_ad(uuid, uuid, text, date, date, text) to anon, authenticated;
+
+create or replace function public.dealer_stop_header_ad(
+  p_dealer_id uuid,
+  p_ad_id uuid
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  update public.header_ads
+  set status = 'stopped'
+  where id = p_ad_id
+    and dealer_id = p_dealer_id
+    and status = 'active';
+
+  if not found then
+    raise exception 'Ad not found';
+  end if;
+end;
+$$;
+
+revoke all on function public.dealer_stop_header_ad(uuid, uuid) from public;
+grant execute on function public.dealer_stop_header_ad(uuid, uuid) to anon, authenticated;
