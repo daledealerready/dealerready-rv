@@ -109,7 +109,7 @@ body {
 .header-ticker-track {
   display: flex;
   width: max-content;
-  animation: header-ticker 22s linear infinite;
+  animation: header-ticker 14s linear infinite;
 }
 
 .header-ticker-shine {
