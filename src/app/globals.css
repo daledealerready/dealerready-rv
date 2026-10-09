@@ -109,7 +109,29 @@ body {
 .header-ticker-track {
   display: flex;
   width: max-content;
-  animation: header-ticker 28s linear infinite;
+  animation: header-ticker 22s linear infinite;
+}
+
+.header-ticker-shine {
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    rgba(240, 180, 41, 0.08) 40%,
+    rgba(255, 244, 214, 0.28) 50%,
+    rgba(240, 180, 41, 0.08) 60%,
+    transparent 100%
+  );
+  background-size: 220% 100%;
+  animation: header-shine 4.5s linear infinite;
+}
+
+@keyframes header-shine {
+  from {
+    background-position: 120% 0;
+  }
+  to {
+    background-position: -120% 0;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -119,7 +141,8 @@ body {
   .animate-rise-delay-3,
   .hero-zoom,
   .cta-pulse,
-  .header-ticker-track {
+  .header-ticker-track,
+  .header-ticker-shine {
     animation: none;
   }
 }

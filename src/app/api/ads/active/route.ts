@@ -27,6 +27,7 @@ export async function GET() {
       id: row.id as string,
       message: row.message as string,
       dealerName: (row.dealer_name as string) || "Dealer",
+      logoUrl: (row.logo_url as string | null) || null,
     }));
 
     return NextResponse.json({ ok: true, ads });

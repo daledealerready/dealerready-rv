@@ -1,16 +1,19 @@
 import { NextResponse } from "next/server";
 import { verifyDealerSessionToken } from "@/lib/dealer-auth";
+import { assertLogo } from "@/lib/logo-image";
 import { HEADER_AD_SLOT } from "@/lib/pricing";
 import { getAppUrl, getStripe, isStripeConfigured } from "@/lib/stripe";
 import { getSupabaseAdmin } from "@/lib/supabase";
 
 type AdBody = {
   token?: string;
-  action?: "list" | "create" | "confirm";
+  action?: "list" | "create" | "confirm" | "logo";
   message?: string;
   startsOn?: string;
   endsOn?: string;
   sessionId?: string;
+  logo?: string;
+  adId?: string;
 };
 
 function clean(value: string | undefined) {
@@ -76,6 +79,27 @@ export async function POST(request: Request) {
       }
     }
 
+    if (action === "logo") {
+      const adId = clean(body.adId);
+      let logo = "";
+      try {
+        logo = assertLogo(body.logo?.trim() || "");
+      } catch (logoError) {
+        const logoMessage =
+          logoError instanceof Error ? logoError.message : "Could not use that logo.";
+        return NextResponse.json({ error: logoMessage }, { status: 400 });
+      }
+      if (!adId || !logo) {
+        return NextResponse.json({ error: "Choose an ad and a logo." }, { status: 400 });
+      }
+      const saved = await supabase.rpc("dealer_set_header_ad_logo", {
+        p_dealer_id: session.dealerId,
+        p_ad_id: adId,
+        p_logo: logo,
+      });
+      if (saved.error) return failure(saved.error, "Could not save the logo.");
+    }
+
     if (action === "create") {
       if (!isStripeConfigured()) {
         return NextResponse.json(
@@ -104,6 +128,14 @@ export async function POST(request: Request) {
           { error: "End date must be on or after the start date." },
           { status: 400 },
         );
+      }
+      let logo = "";
+      try {
+        logo = assertLogo(body.logo?.trim() || "");
+      } catch (logoError) {
+        const logoMessage =
+          logoError instanceof Error ? logoError.message : "Could not use that logo.";
+        return NextResponse.json({ error: logoMessage }, { status: 400 });
       }
 
       const stripe = getStripe();
@@ -147,6 +179,7 @@ export async function POST(request: Request) {
         p_ends_on: endsOn,
         p_price_cents: priceCents,
         p_stripe_session_id: checkout.id,
+        p_logo: logo,
       });
       if (created.error) return failure(created.error, "Could not save the ad.");
 
@@ -165,6 +198,7 @@ export async function POST(request: Request) {
       endsOn: row.ends_on as string,
       price: Math.round(Number(row.price_cents || 0) / 100),
       status: row.status as string,
+      logoUrl: (row.logo_url as string | null) || null,
     }));
 
     return NextResponse.json({ ok: true, ads, price: HEADER_AD_SLOT });

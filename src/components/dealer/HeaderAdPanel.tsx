@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { fileToLogoDataUrl } from "@/lib/logo-image";
 import { HEADER_AD_SLOT } from "@/lib/pricing";
 
 const SESSION_KEY = "dealerready-dealer-token";
@@ -14,6 +15,7 @@ type Ad = {
   endsOn: string;
   price: number;
   status: string;
+  logoUrl?: string | null;
 };
 
 const inputClass =
@@ -39,6 +41,8 @@ export function HeaderAdPanel() {
   const [message, setMessage] = useState("");
   const [startsOn, setStartsOn] = useState("");
   const [endsOn, setEndsOn] = useState("");
+  const [logo, setLogo] = useState("");
+  const [logoName, setLogoName] = useState("");
 
   async function load(currentToken: string) {
     const response = await fetch("/api/dealer/ads", {
@@ -109,6 +113,7 @@ export function HeaderAdPanel() {
           message,
           startsOn,
           endsOn,
+          logo,
         }),
       });
       const data = (await response.json()) as {
@@ -155,6 +160,38 @@ export function HeaderAdPanel() {
             required
           />
         </label>
+        <label className="block">
+          <span className="mb-2 block text-sm font-semibold text-ink/70">Dealer logo</span>
+          <input
+            className={inputClass}
+            type="file"
+            accept="image/*"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (!file) return;
+              void fileToLogoDataUrl(file)
+                .then((dataUrl) => {
+                  setLogo(dataUrl);
+                  setLogoName(file.name);
+                  setError("");
+                })
+                .catch((logoError: unknown) => {
+                  setLogo("");
+                  setLogoName("");
+                  setError(logoError instanceof Error ? logoError.message : "Could not use that logo.");
+                });
+            }}
+          />
+          {logo ? (
+            <span className="mt-3 flex items-center gap-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={logo} alt="" className="h-12 w-auto rounded-md bg-ink object-contain px-2" />
+              <span className="text-sm text-ink/60">{logoName || "Logo ready"}</span>
+            </span>
+          ) : (
+            <span className="mt-2 block text-sm text-ink/50">Optional. A wide logo works best.</span>
+          )}
+        </label>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block">
             <span className="mb-2 block text-sm font-semibold text-ink/70">Starts</span>
@@ -188,10 +225,55 @@ export function HeaderAdPanel() {
         <ul className="mt-4 space-y-3">
           {ads.map((ad) => (
             <li key={ad.id} className="rounded-md border border-fog bg-white p-4">
-              <p className="font-semibold text-ink">{ad.message}</p>
-              <p className="mt-1 text-sm text-ink/70">
-                {labelFor(ad)} · {ad.startsOn} through {ad.endsOn} · ${ad.price}
-              </p>
+              <div className="flex items-center gap-3">
+                {ad.logoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={ad.logoUrl} alt="" className="h-12 w-auto rounded-md bg-ink object-contain px-2" />
+                ) : null}
+                <div>
+                  <p className="font-semibold text-ink">{ad.message}</p>
+                  <p className="mt-1 text-sm text-ink/70">
+                    {labelFor(ad)} · {ad.startsOn} through {ad.endsOn} · ${ad.price}
+                  </p>
+                </div>
+              </div>
+              {ad.status === "active" ? (
+                <label className="mt-3 block text-sm font-semibold text-signal">
+                  {ad.logoUrl ? "Change logo" : "Add logo"}
+                  <input
+                    className="mt-2 block w-full text-sm font-normal text-ink"
+                    type="file"
+                    accept="image/*"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (!file) return;
+                      void fileToLogoDataUrl(file)
+                        .then(async (dataUrl) => {
+                          const response = await fetch("/api/dealer/ads", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              token,
+                              action: "logo",
+                              adId: ad.id,
+                              logo: dataUrl,
+                            }),
+                          });
+                          const data = (await response.json()) as { ok?: boolean; error?: string };
+                          if (!response.ok || !data.ok) {
+                            setError(data.error || "Could not save the logo.");
+                            return;
+                          }
+                          setNotice("Logo added to your header ad.");
+                          await load(token);
+                        })
+                        .catch((logoError: unknown) => {
+                          setError(logoError instanceof Error ? logoError.message : "Could not use that logo.");
+                        });
+                    }}
+                  />
+                </label>
+              ) : null}
             </li>
           ))}
         </ul>
