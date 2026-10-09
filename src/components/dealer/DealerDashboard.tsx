@@ -174,6 +174,12 @@ export function DealerDashboard() {
           BUYER MARKETPLACE
         </Link>
         <Link
+          href="/dealer/inventory"
+          className="rounded-md border border-signal px-5 py-3 text-sm font-bold tracking-wide text-signal hover:bg-mist"
+        >
+          MY INVENTORY
+        </Link>
+        <Link
           href="/dealer/purchased"
           className="rounded-md border border-fog px-5 py-3 text-sm font-semibold text-ink hover:bg-mist"
         >
