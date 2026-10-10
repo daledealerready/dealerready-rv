@@ -39,6 +39,8 @@ export function WeBuyForm() {
   const [make, setMake] = useState("");
   const [model, setModel] = useState("");
   const [notes, setNotes] = useState("");
+  const [payoffStatus, setPayoffStatus] = useState("");
+  const [lenderName, setLenderName] = useState("");
   const [media, setMedia] = useState<LocalMedia[]>([]);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState("");
@@ -94,6 +96,14 @@ export function WeBuyForm() {
 
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
+    if (payoffStatus !== "Paid off" && payoffStatus !== "Financed") {
+      setError("Tell us if the RV is paid off or financed.");
+      return;
+    }
+    if (payoffStatus === "Financed" && lenderName.trim().length < 2) {
+      setError("Enter the financing institution name.");
+      return;
+    }
     setSaving(true);
     setError("");
     setStatus("");
@@ -126,6 +136,8 @@ export function WeBuyForm() {
           make,
           model,
           notes,
+          payoffStatus,
+          lenderName: payoffStatus === "Financed" ? lenderName : "",
           files: uploaded,
         }),
       });
@@ -214,6 +226,34 @@ export function WeBuyForm() {
           setModel(next.model);
         }}
       />
+      <label className="block">
+        <span className="mb-2 block text-sm font-semibold text-ink/70">Is this RV paid off or financed?</span>
+        <select
+          className={inputClass}
+          value={payoffStatus}
+          required
+          onChange={(event) => {
+            setPayoffStatus(event.target.value);
+            if (event.target.value !== "Financed") setLenderName("");
+          }}
+        >
+          <option value="">Select one</option>
+          <option value="Paid off">Paid off</option>
+          <option value="Financed">Financed</option>
+        </select>
+      </label>
+      {payoffStatus === "Financed" ? (
+        <label className="block">
+          <span className="mb-2 block text-sm font-semibold text-ink/70">Financing institution</span>
+          <input
+            className={inputClass}
+            value={lenderName}
+            required
+            placeholder="Bank or finance company name"
+            onChange={(event) => setLenderName(event.target.value)}
+          />
+        </label>
+      ) : null}
       <label className="block">
         <span className="mb-2 block text-sm font-semibold text-ink/70">ZIP code</span>
         <input className={inputClass} value={zip} onChange={(event) => setZip(event.target.value)} />

@@ -25,6 +25,8 @@ type SellBody = {
   make?: string;
   model?: string;
   notes?: string;
+  payoffStatus?: string;
+  lenderName?: string;
   files?: SellFile[];
 };
 
@@ -61,6 +63,20 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
+    const payoffStatus = clean(body.payoffStatus);
+    const lenderName = payoffStatus === "Financed" ? clean(body.lenderName) : "";
+    if (payoffStatus !== "Paid off" && payoffStatus !== "Financed") {
+      return NextResponse.json(
+        { error: "Tell us if the RV is paid off or financed." },
+        { status: 400 },
+      );
+    }
+    if (payoffStatus === "Financed" && lenderName.length < 2) {
+      return NextResponse.json(
+        { error: "Enter the financing institution name." },
+        { status: 400 },
+      );
+    }
 
     const supabase = getSupabaseAdmin();
     const files = cleanFiles(body.files);
@@ -79,15 +95,29 @@ export async function POST(request: Request) {
       p_make: clean(body.make),
       p_model: clean(body.model),
       p_notes: clean(body.notes),
-    };
-    let { error } = await supabase.rpc("submit_sell_request", {
-      ...payload,
       p_files: files,
-    });
-    if (error && files.length === 0) {
+      p_payoff_status: payoffStatus,
+      p_lender_name: lenderName,
+    };
+    let { error } = await supabase.rpc("submit_sell_request", payload);
+    if (error) {
       const message = error.message.toLowerCase();
       if (message.includes("could not find the function") || message.includes("schema cache")) {
-        const fallback = await supabase.rpc("submit_sell_request", payload);
+        const payoffNote = payoffStatus === "Financed" ? `Financed: ${lenderName}` : "Paid off";
+        const notes = [clean(body.notes), payoffNote].filter(Boolean).join("\n");
+        const fallback = await supabase.rpc("submit_sell_request", {
+          p_first_name: firstName,
+          p_last_name: lastName,
+          p_email: email,
+          p_mobile: mobile,
+          p_zip: clean(body.zip),
+          p_rv_category: rvCategory,
+          p_year: clean(body.year),
+          p_make: clean(body.make),
+          p_model: clean(body.model),
+          p_notes: notes,
+          p_files: files,
+        });
         error = fallback.error;
       }
     }
