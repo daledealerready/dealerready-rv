@@ -8,6 +8,12 @@ const CATEGORIES = [
   "High-end Fifth Wheel",
 ];
 
+type SellFile = {
+  path?: string;
+  kind?: string;
+  name?: string;
+};
+
 type SellBody = {
   firstName?: string;
   lastName?: string;
@@ -19,10 +25,19 @@ type SellBody = {
   make?: string;
   model?: string;
   notes?: string;
+  files?: SellFile[];
 };
 
 function clean(value: string | undefined) {
   return value?.trim() || "";
+}
+
+function cleanFiles(files: SellFile[] | undefined) {
+  return (files || []).slice(0, 22).map((file) => ({
+    path: clean(file.path),
+    kind: file.kind === "video" ? "video" : file.kind === "photo" ? "photo" : "",
+    name: clean(file.name).slice(0, 180),
+  }));
 }
 
 export async function POST(request: Request) {
@@ -48,7 +63,12 @@ export async function POST(request: Request) {
     }
 
     const supabase = getSupabaseAdmin();
-    const { error } = await supabase.rpc("submit_sell_request", {
+    const files = cleanFiles(body.files);
+    const pathOk = /^[0-9a-f-]{36}\/[A-Za-z0-9._-]{1,180}$/i;
+    if (files.some((file) => (file.kind !== "photo" && file.kind !== "video") || !pathOk.test(file.path))) {
+      return NextResponse.json({ error: "One of the photos or videos could not be saved." }, { status: 400 });
+    }
+    const payload = {
       p_first_name: firstName,
       p_last_name: lastName,
       p_email: email,
@@ -59,10 +79,35 @@ export async function POST(request: Request) {
       p_make: clean(body.make),
       p_model: clean(body.model),
       p_notes: clean(body.notes),
+    };
+    let { error } = await supabase.rpc("submit_sell_request", {
+      ...payload,
+      p_files: files,
     });
+    if (error && files.length === 0) {
+      const message = error.message.toLowerCase();
+      if (message.includes("could not find the function") || message.includes("schema cache")) {
+        const fallback = await supabase.rpc("submit_sell_request", payload);
+        error = fallback.error;
+      }
+    }
 
     if (error) {
       const message = error.message.toLowerCase();
+      if (
+        files.length > 0 &&
+        (message.includes("could not find the function") ||
+          message.includes("schema cache") ||
+          message.includes("sell_request_files"))
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "Photo and video storage is not turned on yet. Run sell_media.sql in Supabase, then send the request again.",
+          },
+          { status: 500 },
+        );
+      }
       if (
         message.includes("submit_sell_request") ||
         message.includes("could not find the function") ||

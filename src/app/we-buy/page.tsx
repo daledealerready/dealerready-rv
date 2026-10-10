@@ -64,7 +64,7 @@ export default function WeBuyPage() {
             Nearly every purchase is agreed from your photos and video. The unit is usually not seen in person until the transport driver arrives for pickup. Send complete information up front so the offer stays firm and pickup is not delayed.
           </p>
           <p className="mt-4 text-lg leading-relaxed text-ink/75">
-            Please be ready with 15 to 20 clear photos:
+            Add 15 to 20 clear photos in the form below:
           </p>
           <ul className="mt-4 space-y-2 text-ink/80">
             <li>Exterior: front, back, and both sides</li>
