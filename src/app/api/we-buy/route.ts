@@ -27,11 +27,21 @@ type SellBody = {
   notes?: string;
   payoffStatus?: string;
   lenderName?: string;
+  payoffAmount?: string;
   files?: SellFile[];
 };
 
 function clean(value: string | undefined) {
   return value?.trim() || "";
+}
+
+function cleanAmount(value: string | undefined) {
+  const raw = clean(value).replace(/[$,\s]/g, "");
+  if (!raw) return "";
+  if (!/^\d+(\.\d{1,2})?$/.test(raw)) return null;
+  const amount = Number(raw);
+  if (!Number.isFinite(amount) || amount < 0 || amount > 9_999_999_999) return null;
+  return raw;
 }
 
 function cleanFiles(files: SellFile[] | undefined) {
@@ -64,16 +74,18 @@ export async function POST(request: Request) {
       );
     }
     const payoffStatus = clean(body.payoffStatus);
-    const lenderName = payoffStatus === "Financed" ? clean(body.lenderName) : "";
-    if (payoffStatus !== "Paid off" && payoffStatus !== "Financed") {
+    const hasPayoff = payoffStatus === "Has a payoff";
+    const lenderName = hasPayoff ? clean(body.lenderName) : "";
+    const payoffAmount = hasPayoff ? cleanAmount(body.payoffAmount) : "";
+    if (payoffStatus !== "Paid off" && payoffStatus !== "Has a payoff") {
       return NextResponse.json(
-        { error: "Tell us if the RV is paid off or financed." },
+        { error: "Tell us if this RV has a payoff." },
         { status: 400 },
       );
     }
-    if (payoffStatus === "Financed" && lenderName.length < 2) {
+    if (payoffAmount === null) {
       return NextResponse.json(
-        { error: "Enter the financing institution name." },
+        { error: "Enter the payoff amount as a number, or leave it blank." },
         { status: 400 },
       );
     }
@@ -98,12 +110,17 @@ export async function POST(request: Request) {
       p_files: files,
       p_payoff_status: payoffStatus,
       p_lender_name: lenderName,
+      p_payoff_amount: payoffAmount,
     };
     let { error } = await supabase.rpc("submit_sell_request", payload);
     if (error) {
       const message = error.message.toLowerCase();
       if (message.includes("could not find the function") || message.includes("schema cache")) {
-        const payoffNote = payoffStatus === "Financed" ? `Financed: ${lenderName}` : "Paid off";
+        const payoffNote = hasPayoff
+          ? ["Has a payoff", lenderName ? `Lender: ${lenderName}` : "", payoffAmount ? `Payoff amount: ${payoffAmount}` : ""]
+              .filter(Boolean)
+              .join(". ")
+          : "Paid off";
         const notes = [clean(body.notes), payoffNote].filter(Boolean).join("\n");
         const fallback = await supabase.rpc("submit_sell_request", {
           p_first_name: firstName,

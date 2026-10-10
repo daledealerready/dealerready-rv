@@ -28,6 +28,12 @@ const CATEGORIES = [
 const inputClass =
   "w-full rounded-md border border-fog bg-white px-4 py-3 text-base text-ink outline-none focus:border-signal";
 
+function payoffAmountOk(value: string) {
+  const raw = value.trim().replace(/[$,\s]/g, "");
+  if (!raw) return true;
+  return /^\d+(\.\d{1,2})?$/.test(raw);
+}
+
 export function WeBuyForm() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -41,6 +47,7 @@ export function WeBuyForm() {
   const [notes, setNotes] = useState("");
   const [payoffStatus, setPayoffStatus] = useState("");
   const [lenderName, setLenderName] = useState("");
+  const [payoffAmount, setPayoffAmount] = useState("");
   const [media, setMedia] = useState<LocalMedia[]>([]);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState("");
@@ -96,12 +103,13 @@ export function WeBuyForm() {
 
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
-    if (payoffStatus !== "Paid off" && payoffStatus !== "Financed") {
-      setError("Tell us if the RV is paid off or financed.");
+    if (payoffStatus !== "Paid off" && payoffStatus !== "Has a payoff") {
+      setError("Tell us if this RV has a payoff.");
       return;
     }
-    if (payoffStatus === "Financed" && lenderName.trim().length < 2) {
-      setError("Enter the financing institution name.");
+    const hasPayoff = payoffStatus === "Has a payoff";
+    if (hasPayoff && !payoffAmountOk(payoffAmount)) {
+      setError("Enter the payoff amount as a number, or leave it blank.");
       return;
     }
     setSaving(true);
@@ -137,7 +145,8 @@ export function WeBuyForm() {
           model,
           notes,
           payoffStatus,
-          lenderName: payoffStatus === "Financed" ? lenderName : "",
+          lenderName: hasPayoff ? lenderName : "",
+          payoffAmount: hasPayoff ? payoffAmount : "",
           files: uploaded,
         }),
       });
@@ -227,32 +236,47 @@ export function WeBuyForm() {
         }}
       />
       <label className="block">
-        <span className="mb-2 block text-sm font-semibold text-ink/70">Is this RV paid off or financed?</span>
+        <span className="mb-2 block text-sm font-semibold text-ink/70">Does this RV have a payoff?</span>
         <select
           className={inputClass}
           value={payoffStatus}
           required
           onChange={(event) => {
-            setPayoffStatus(event.target.value);
-            if (event.target.value !== "Financed") setLenderName("");
+            const next = event.target.value;
+            setPayoffStatus(next);
+            if (next !== "Has a payoff") {
+              setLenderName("");
+              setPayoffAmount("");
+            }
           }}
         >
           <option value="">Select one</option>
-          <option value="Paid off">Paid off</option>
-          <option value="Financed">Financed</option>
+          <option value="Paid off">No, it is paid off</option>
+          <option value="Has a payoff">Yes, it has a payoff</option>
         </select>
       </label>
-      {payoffStatus === "Financed" ? (
-        <label className="block">
-          <span className="mb-2 block text-sm font-semibold text-ink/70">Financing institution</span>
-          <input
-            className={inputClass}
-            value={lenderName}
-            required
-            placeholder="Bank or finance company name"
-            onChange={(event) => setLenderName(event.target.value)}
-          />
-        </label>
+      {payoffStatus === "Has a payoff" ? (
+        <>
+          <label className="block">
+            <span className="mb-2 block text-sm font-semibold text-ink/70">Financing institution (optional)</span>
+            <input
+              className={inputClass}
+              value={lenderName}
+              placeholder="Bank or finance company name"
+              onChange={(event) => setLenderName(event.target.value)}
+            />
+          </label>
+          <label className="block">
+            <span className="mb-2 block text-sm font-semibold text-ink/70">Payoff amount (optional)</span>
+            <input
+              className={inputClass}
+              inputMode="decimal"
+              value={payoffAmount}
+              placeholder="Amount still owed, if you know it"
+              onChange={(event) => setPayoffAmount(event.target.value)}
+            />
+          </label>
+        </>
       ) : null}
       <label className="block">
         <span className="mb-2 block text-sm font-semibold text-ink/70">ZIP code</span>
