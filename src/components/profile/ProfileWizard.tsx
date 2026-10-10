@@ -93,6 +93,7 @@ export function ProfileWizard() {
   const [returnCode, setReturnCode] = useState("");
   const [returnBusy, setReturnBusy] = useState(false);
   const [returnNotice, setReturnNotice] = useState("");
+  const [fixStep, setFixStep] = useState<number | null>(null);
 
   useEffect(() => {
     const saved = loadProfile();
@@ -210,6 +211,10 @@ export function ProfileWizard() {
     }
 
     if (phase === "review") {
+      if (fixStep != null && !validateStep(fixStep)) {
+        setError("Please complete this answer before continuing.");
+        return;
+      }
       if (
         !profile.authAccurate ||
         !profile.authNotLender ||
@@ -591,7 +596,28 @@ export function ProfileWizard() {
         ) : null}
 
         {phase === "review" ? (
-          <ReviewStep profile={profile} update={update} />
+          <ReviewStep
+            profile={profile}
+            update={update}
+            toggleList={toggleList}
+            fixStep={fixStep}
+            onFixStep={(nextStep) => {
+              if (fixStep != null && fixStep !== nextStep && !validateStep(fixStep)) {
+                setError("Please complete this answer before continuing.");
+                return;
+              }
+              setError("");
+              setFixStep(nextStep);
+            }}
+            onCloseFix={() => {
+              if (fixStep != null && !validateStep(fixStep)) {
+                setError("Please complete this answer before continuing.");
+                return;
+              }
+              setError("");
+              setFixStep(null);
+            }}
+          />
         ) : phase === "verify" ? (
           <VerifyStep
             mobile={profile.mobile}
@@ -1242,36 +1268,48 @@ function VerifyStep({
 function ReviewStep({
   profile,
   update,
+  toggleList,
+  fixStep,
+  onFixStep,
+  onCloseFix,
 }: {
   profile: BuyerProfile;
   update: <K extends keyof BuyerProfile>(key: K, value: BuyerProfile[K]) => void;
+  toggleList: (key: "rvTypes" | "features", value: string) => void;
+  fixStep: number | null;
+  onFixStep: (step: number) => void;
+  onCloseFix: () => void;
 }) {
-  const rows = [
-    ["RV type", profile.rvTypes.join(", ") || "—"],
-    ["New / used", profile.condition || "—"],
-    [
-      "Brand / model",
-      [profile.preferredManufacturer, profile.preferredModel]
-        .filter(Boolean)
-        .join(" ") || "—",
-    ],
-    [
-      "Budget",
-      profile.minPrice || profile.maxPrice
-        ? `$${profile.minPrice || "—"} – $${profile.maxPrice || "—"}`
-        : "—",
-    ],
-    ["Down payment", profile.downPayment || "—"],
-    ["Trade", profile.hasTrade || "—"],
-    ["Credit range", profile.creditRange || "—"],
-    ["Income", profile.incomeRange || "—"],
-    ["Purchase timeline", profile.purchaseTimeline || "—"],
-    ["Travel range", profile.travelDistance || "—"],
-    ["Features", profile.features.join(", ") || "—"],
-    [
-      "Contact",
-      `${profile.firstName} ${profile.lastName} · ${profile.preferredContact}`,
-    ],
+  const rows: { label: string; value: string; step: number }[] = [
+    { label: "RV type", value: profile.rvTypes.join(", ") || "—", step: 2 },
+    { label: "New / used", value: profile.condition || "—", step: 3 },
+    {
+      label: "Brand / model",
+      value:
+        [profile.preferredManufacturer, profile.preferredModel].filter(Boolean).join(" ") ||
+        "—",
+      step: 4,
+    },
+    {
+      label: "Budget",
+      value:
+        profile.minPrice || profile.maxPrice
+          ? `$${profile.minPrice || "—"} – $${profile.maxPrice || "—"}`
+          : "—",
+      step: 5,
+    },
+    { label: "Down payment", value: profile.downPayment || "—", step: 6 },
+    { label: "Trade", value: profile.hasTrade || "—", step: 7 },
+    { label: "Credit range", value: profile.creditRange || "—", step: 8 },
+    { label: "Income", value: profile.incomeRange || "—", step: 9 },
+    { label: "Purchase timeline", value: profile.purchaseTimeline || "—", step: 1 },
+    { label: "Travel range", value: profile.travelDistance || "—", step: 11 },
+    { label: "Features", value: profile.features.join(", ") || "—", step: 10 },
+    {
+      label: "Contact",
+      value: `${profile.firstName} ${profile.lastName} · ${profile.preferredContact}`,
+      step: 12,
+    },
   ];
 
   return (
@@ -1280,18 +1318,49 @@ function ReviewStep({
         Review your information.
       </h1>
       <p className="mt-4 text-lg text-ink/70">
-        Make sure everything looks right before you submit.
+        Tap any answer to change it here. You stay on this page.
       </p>
 
       <div className="mt-8 divide-y divide-fog overflow-hidden rounded-md border border-fog bg-white">
-        {rows.map(([label, value]) => (
-          <div key={label} className="flex items-start justify-between gap-4 px-4 py-4">
-            <div>
-              <p className="text-sm font-semibold text-ink/55">{label}</p>
-              <p className="mt-1 text-ink">{value}</p>
+        {rows.map((row) => {
+          const open = fixStep === row.step;
+          return (
+            <div key={row.label}>
+              <button
+                type="button"
+                onClick={() => (open ? onCloseFix() : onFixStep(row.step))}
+                className="flex w-full items-start justify-between gap-4 px-4 py-4 text-left hover:bg-mist"
+              >
+                <div>
+                  <p className="text-sm font-semibold text-ink/55">{row.label}</p>
+                  <p className="mt-1 text-ink">{row.value}</p>
+                </div>
+                <span className="shrink-0 text-sm font-bold tracking-wide text-signal">
+                  {open ? "CLOSE" : "FIX"}
+                </span>
+              </button>
+              {open ? (
+                <div className="border-t border-fog bg-paper px-4 py-5">
+                  <div className="[&_h1]:mt-0 [&_h1]:text-2xl [&_h1]:md:text-2xl">
+                    <QuestionStep
+                      step={row.step}
+                      profile={profile}
+                      update={update}
+                      toggleList={toggleList}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={onCloseFix}
+                    className="mt-6 rounded-md bg-signal px-5 py-3 text-sm font-bold tracking-wide text-white hover:bg-signal-deep"
+                  >
+                    DONE
+                  </button>
+                </div>
+              ) : null}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="mt-8 space-y-3">
