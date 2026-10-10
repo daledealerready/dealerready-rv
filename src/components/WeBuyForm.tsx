@@ -57,6 +57,13 @@ export function WeBuyForm() {
         setError("Use a photo (JPG, PNG, WEBP, HEIC) or a video (MP4, MOV, WEBM).");
         continue;
       }
+      if (kind === "video" && file.size > 45 * 1024 * 1024) {
+        const megs = Math.max(1, Math.round(file.size / (1024 * 1024)));
+        setError(
+          `${file.name} is ${megs} MB. Each video must be under 45 MB. Remove it, or record a shorter walk-around, then send the photos.`,
+        );
+        continue;
+      }
       const photos = next.filter((item) => item.kind === "photo").length;
       const videos = next.filter((item) => item.kind === "video").length;
       if (kind === "photo" && photos >= MAX_SELL_PHOTOS) {
@@ -128,8 +135,15 @@ export function WeBuyForm() {
         return;
       }
       setDone(true);
-    } catch {
-      setError("Network error. Please try again.");
+    } catch (uploadError) {
+      const message = uploadError instanceof Error ? uploadError.message : "";
+      if (/failed to fetch|network|load failed|aborted|timeout/i.test(message)) {
+        setError(
+          "The upload stopped before it finished. Remove the video and send the photos first if the signal is weak. A shorter video can go in a second request.",
+        );
+      } else {
+        setError(message || "Could not send your request. Please try again.");
+      }
     } finally {
       setSaving(false);
     }
@@ -247,7 +261,9 @@ export function WeBuyForm() {
                   <video src={item.previewUrl} className="h-28 w-full bg-ink object-cover" muted />
                 )}
                 <div className="flex items-center justify-between gap-2 px-2 py-2">
-                  <p className="truncate text-xs text-ink/70">{item.file.name}</p>
+                  <p className="truncate text-xs text-ink/70">
+                    {item.file.name} · {Math.max(1, Math.round(item.file.size / (1024 * 1024)))} MB
+                  </p>
                   <button
                     type="button"
                     onClick={() => removeMedia(item.id)}
