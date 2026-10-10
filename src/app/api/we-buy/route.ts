@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { sellAlertMessage, sendOwnerAlert } from "@/lib/owner-alert";
 import { getSupabaseAdmin } from "@/lib/supabase";
 
 const CATEGORIES = [
@@ -170,6 +171,28 @@ export async function POST(request: Request) {
         { status: 500 },
       );
     }
+
+    const photoCount = files.filter((file) => file.kind === "photo").length;
+    const videoCount = files.filter((file) => file.kind === "video").length;
+    await sendOwnerAlert(
+      sellAlertMessage({
+        firstName,
+        lastName,
+        email,
+        mobile,
+        zip: clean(body.zip),
+        rvCategory,
+        year: clean(body.year),
+        make: clean(body.make),
+        model: clean(body.model),
+        payoffStatus,
+        lenderName,
+        payoffAmount,
+        notes: clean(body.notes),
+        photoCount,
+        videoCount,
+      }),
+    );
 
     return NextResponse.json({ ok: true });
   } catch (error) {

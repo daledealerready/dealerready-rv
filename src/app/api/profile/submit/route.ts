@@ -6,6 +6,7 @@ import {
   normalizeUsPhone,
   verifyPhoneVerificationToken,
 } from "@/lib/phone";
+import { sendOwnerAlert, shopperAlertMessage } from "@/lib/owner-alert";
 import { getSupabaseAdmin } from "@/lib/supabase";
 
 function makeBuyerCode() {
@@ -222,6 +223,26 @@ export async function POST(request: Request) {
         }
       }
 
+      await sendOwnerAlert(
+        shopperAlertMessage({
+          updated: true,
+          buyerCode: existing.buyer_code,
+          firstName: profile.firstName.trim(),
+          lastName: profile.lastName.trim(),
+          email,
+          mobile: phone || profile.mobile.trim(),
+          zip: profile.zip.trim(),
+          rvTypes: profile.rvTypes || [],
+          manufacturer: profile.preferredManufacturer || "",
+          model: profile.preferredModel || "",
+          timeline: profile.purchaseTimeline || "",
+          minPrice: profile.minPrice || "",
+          maxPrice: profile.maxPrice || "",
+          score,
+          category,
+        }),
+      );
+
       return NextResponse.json({
         ok: true,
         updated: true,
@@ -275,6 +296,26 @@ export async function POST(request: Request) {
         { status: 500 },
       );
     }
+
+    await sendOwnerAlert(
+      shopperAlertMessage({
+        updated: false,
+        buyerCode,
+        firstName: profile.firstName.trim(),
+        lastName: profile.lastName.trim(),
+        email,
+        mobile: phone || profile.mobile.trim(),
+        zip: profile.zip.trim(),
+        rvTypes: profile.rvTypes || [],
+        manufacturer: profile.preferredManufacturer || "",
+        model: profile.preferredModel || "",
+        timeline: profile.purchaseTimeline || "",
+        minPrice: profile.minPrice || "",
+        maxPrice: profile.maxPrice || "",
+        score,
+        category,
+      }),
+    );
 
     return NextResponse.json({
       ok: true,
