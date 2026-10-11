@@ -40,6 +40,9 @@ export default function Home() {
 
             <div className="animate-rise-delay-3">
               <ExactUnitSearch />
+              <Link href="/floorplan-sample" className="mt-3 inline-block text-sm font-semibold text-warm underline">
+                Try a sample floorplan match
+              </Link>
             </div>
 
             <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
