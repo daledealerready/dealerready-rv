@@ -1321,6 +1321,15 @@ function ReviewStep({
       <p className="mt-4 text-lg text-ink/70">
         Tap any answer to change it here. You stay on this page.
       </p>
+      {profile.guideSummary ? (
+        <div className="mt-6 rounded-md border border-fog bg-white px-4 py-4">
+          <p className="text-sm font-semibold text-ink/55">From your questions</p>
+          <p className="mt-2 text-ink">{profile.guideSummary}</p>
+          <p className="mt-1 text-sm text-ink/70">
+            RV type on the lead: {profile.rvTypes.join(", ") || "not chosen yet"}
+          </p>
+        </div>
+      ) : null}
       {profile.coachPicks.length > 0 ? (
         <div className="mt-6 rounded-md border border-fog bg-white px-4 py-4">
           <p className="text-sm font-semibold text-ink/55">

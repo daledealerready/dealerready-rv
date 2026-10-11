@@ -15,6 +15,7 @@ export type BuyerProfile = {
   exactUnitQuery: string;
   coachSearchKind: "" | "exact" | "description";
   coachPicks: string[];
+  guideSummary: string;
   openToComparable: boolean;
   minPrice: string;
   maxPrice: string;
@@ -66,6 +67,7 @@ export const emptyProfile: BuyerProfile = {
   exactUnitQuery: "",
   coachSearchKind: "",
   coachPicks: [],
+  guideSummary: "",
   openToComparable: true,
   minPrice: "",
   maxPrice: "",

@@ -20,6 +20,7 @@ export type ShopperAlert = {
   category: string;
   coachSearchKind?: string;
   coachPicks?: string[];
+  guideSummary?: string;
 };
 
 export type SellAlert = {
@@ -54,6 +55,7 @@ export function shopperAlertMessage(input: ShopperAlert) {
     `Email: ${input.email}`,
     `ZIP: ${input.zip}`,
     `Looking for: ${looking || "Not listed"}`,
+    input.guideSummary ? `From their questions: ${input.guideSummary}` : "",
     ...coachPickGroups(input.coachSearchKind || "", input.coachPicks || []).flatMap(
       (group) => [group.heading + ":", ...group.items.map((item) => `- ${item}`)],
     ),

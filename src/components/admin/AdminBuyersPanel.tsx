@@ -267,6 +267,12 @@ function BuyerDetail({ buyer }: { buyer: BuyerRow }) {
       <p className="mt-1 text-sm text-ink/55">
         Submitted {new Date(buyer.created_at).toLocaleString()}
       </p>
+      {typeof buyer.profile?.guideSummary === "string" && buyer.profile.guideSummary ? (
+        <p className="mt-4 rounded-md bg-mist px-3 py-3 text-sm text-ink">
+          <span className="font-semibold">From their questions: </span>
+          {buyer.profile.guideSummary}
+        </p>
+      ) : null}
       <div className="mt-4">
         <CoachPicksList
           kind={

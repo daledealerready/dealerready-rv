@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Barlow_Condensed, Source_Sans_3 } from "next/font/google";
+import { BeginnerChat } from "@/components/BeginnerChat";
 import { HeaderTicker } from "@/components/HeaderTicker";
 import "./globals.css";
 
@@ -27,6 +28,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full antialiased">
         <HeaderTicker />
         {children}
+        <BeginnerChat />
       </body>
     </html>
   );

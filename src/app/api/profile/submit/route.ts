@@ -242,6 +242,7 @@ export async function POST(request: Request) {
           category,
           coachSearchKind: profile.coachSearchKind || "",
           coachPicks: profile.coachPicks || [],
+          guideSummary: profile.guideSummary || "",
         }),
       );
 
@@ -318,6 +319,7 @@ export async function POST(request: Request) {
         category,
         coachSearchKind: profile.coachSearchKind || "",
         coachPicks: profile.coachPicks || [],
+        guideSummary: profile.guideSummary || "",
       }),
     );
 
