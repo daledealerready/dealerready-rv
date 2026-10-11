@@ -5,6 +5,8 @@ export type FloorplanCategory =
   | "Travel Trailer"
   | "Fifth Wheel";
 
+export type SketchBand = { label: string }[];
+
 export type SampleFloorplan = {
   id: string;
   year: number;
@@ -16,6 +18,8 @@ export type SampleFloorplan = {
   bedrooms: number;
   bathrooms: number;
   bunks: boolean;
+  layout: string;
+  sketch: SketchBand[];
 };
 
 /** A few public floorplan facts for a search test. No photos and no copied pages. */
@@ -31,6 +35,13 @@ export const SAMPLE_FLOORPLANS: readonly SampleFloorplan[] = [
     bedrooms: 1,
     bathrooms: 1.5,
     bunks: false,
+    layout: "Center bedroom, a half bath, and a full bath at the rear. No bunk room.",
+    sketch: [
+      [{ label: "Cab" }],
+      [{ label: "Living" }],
+      [{ label: "Bedroom" }],
+      [{ label: "Half bath" }, { label: "Bath" }],
+    ],
   },
   {
     id: "berkshire-40f-2026",
@@ -43,6 +54,15 @@ export const SAMPLE_FLOORPLANS: readonly SampleFloorplan[] = [
     bedrooms: 1,
     bathrooms: 2,
     bunks: true,
+    layout: "Bunkhouse with two full baths, a king bed, and a drop-down bed over the cab.",
+    sketch: [
+      [{ label: "Cab" }, { label: "Drop-down" }],
+      [{ label: "Living" }],
+      [{ label: "Bunks" }],
+      [{ label: "Bath" }],
+      [{ label: "Bedroom" }],
+      [{ label: "Bath" }],
+    ],
   },
   {
     id: "berkshire-40e-2026",
@@ -55,6 +75,14 @@ export const SAMPLE_FLOORPLANS: readonly SampleFloorplan[] = [
     bedrooms: 1,
     bathrooms: 2,
     bunks: true,
+    layout: "Bunk room across from a full bath, king bedroom, and a second full bath at the rear.",
+    sketch: [
+      [{ label: "Cab" }],
+      [{ label: "Kitchen" }],
+      [{ label: "Bunks" }, { label: "Bath" }],
+      [{ label: "Bedroom" }],
+      [{ label: "Bath" }],
+    ],
   },
   {
     id: "discovery-38n-2027",
@@ -67,6 +95,14 @@ export const SAMPLE_FLOORPLANS: readonly SampleFloorplan[] = [
     bedrooms: 1,
     bathrooms: 2,
     bunks: true,
+    layout: "King bedroom toward the front, bunks in the middle, and two full baths at the rear.",
+    sketch: [
+      [{ label: "Cab" }],
+      [{ label: "Bedroom" }],
+      [{ label: "Living" }],
+      [{ label: "Bunks" }],
+      [{ label: "Bath" }, { label: "Bath" }],
+    ],
   },
   {
     id: "sierra-41duplex-2026",
@@ -79,6 +115,14 @@ export const SAMPLE_FLOORPLANS: readonly SampleFloorplan[] = [
     bedrooms: 2,
     bathrooms: 2,
     bunks: false,
+    layout: "A bedroom at each end, with a bathroom for each bedroom.",
+    sketch: [
+      [{ label: "Bedroom" }],
+      [{ label: "Bath" }],
+      [{ label: "Living" }],
+      [{ label: "Bath" }],
+      [{ label: "Bedroom" }],
+    ],
   },
   {
     id: "imagine-2300mk-2027",
@@ -91,6 +135,12 @@ export const SAMPLE_FLOORPLANS: readonly SampleFloorplan[] = [
     bedrooms: 1,
     bathrooms: 1,
     bunks: false,
+    layout: "One bedroom at the front and one bathroom.",
+    sketch: [
+      [{ label: "Bedroom" }],
+      [{ label: "Living" }],
+      [{ label: "Bath" }],
+    ],
   },
 ];
 

@@ -5,7 +5,7 @@ export default function FloorplanSamplePage() {
   return (
     <div className="min-h-full bg-paper">
       <header className="border-b border-fog bg-white">
-        <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-5 py-4">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-4">
           <Link href="/" className="font-[family-name:var(--font-display)] text-2xl font-semibold tracking-wide text-ink">
             DealerReady <span className="text-signal">RV</span>
           </Link>
@@ -14,7 +14,7 @@ export default function FloorplanSamplePage() {
           </Link>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-5xl px-5 py-14">
+      <main className="mx-auto w-full max-w-6xl px-5 py-14">
         <p className="font-[family-name:var(--font-display)] text-sm font-semibold tracking-[0.16em] text-signal uppercase">
           Sample test
         </p>
@@ -22,7 +22,7 @@ export default function FloorplanSamplePage() {
           Match a floorplan before asking a manufacturer.
         </h1>
         <p className="mt-5 max-w-2xl text-lg leading-relaxed text-ink/75">
-          Six coaches only. No manufacturer website is copied, and there are no photos. This checks whether an exact model and a plain description can find the right layout.
+          Six coaches only. Each match shows a small layout sketch and a short description. Tap a sketch to enlarge it. These sketches are not the factory drawings.
         </p>
         <div className="mt-10">
           <FloorplanSample />

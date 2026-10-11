@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { FloorplanSketch } from "@/components/FloorplanSketch";
 import {
   formatBathrooms,
   formatLength,
@@ -21,29 +22,47 @@ const CATEGORIES: FloorplanCategory[] = [
 const inputClass =
   "w-full rounded-md border border-fog bg-white px-4 py-3 text-base text-ink outline-none focus:border-signal";
 
-function PlanCard({ plan }: { plan: SampleFloorplan }) {
+function PlanCard({ plan, onOpen }: { plan: SampleFloorplan; onOpen: (plan: SampleFloorplan) => void }) {
+  const name = `${plan.year} ${plan.make} ${plan.model} ${plan.floorplan}`;
   return (
-    <article className="rounded-md border border-fog bg-white p-5">
-      <h3 className="font-[family-name:var(--font-display)] text-2xl font-semibold text-ink">
-        {plan.year} {plan.make} {plan.model} {plan.floorplan}
-      </h3>
-      <p className="mt-2 text-ink/75">
+    <article className="flex flex-col rounded-md border border-fog bg-white p-4">
+      <button
+        type="button"
+        onClick={() => onOpen(plan)}
+        className="block w-full rounded-md text-left focus:outline-none focus:ring-2 focus:ring-signal"
+        aria-label={`Enlarge layout for ${name}`}
+      >
+        <FloorplanSketch plan={plan} />
+      </button>
+      <h3 className="mt-3 font-[family-name:var(--font-display)] text-2xl font-semibold text-ink">{name}</h3>
+      <p className="mt-2 text-sm leading-relaxed text-ink/80">{plan.layout}</p>
+      <p className="mt-2 text-sm text-ink/60">
         {plan.category} · {formatLength(plan.lengthInches)} · {plan.bedrooms} bedroom
-        {plan.bedrooms === 1 ? "" : "s"} · {formatBathrooms(plan.bathrooms)} ·{" "}
-        {plan.bunks ? "Bunks" : "No bunks"}
+        {plan.bedrooms === 1 ? "" : "s"} · {formatBathrooms(plan.bathrooms)} · {plan.bunks ? "Bunks" : "No bunks"}
       </p>
+      <button type="button" onClick={() => onOpen(plan)} className="mt-3 text-left text-sm font-bold text-signal">
+        Tap to enlarge
+      </button>
     </article>
   );
 }
 
-function ResultList({ title, plans }: { title: string; plans: SampleFloorplan[] }) {
+function ResultList({
+  title,
+  plans,
+  onOpen,
+}: {
+  title: string;
+  plans: SampleFloorplan[];
+  onOpen: (plan: SampleFloorplan) => void;
+}) {
   if (plans.length === 0) return null;
   return (
     <section className="mt-8">
       <h2 className="font-[family-name:var(--font-display)] text-3xl font-semibold text-ink">{title}</h2>
-      <div className="mt-4 grid gap-3">
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {plans.map((plan) => (
-          <PlanCard key={plan.id} plan={plan} />
+          <PlanCard key={plan.id} plan={plan} onOpen={onOpen} />
         ))}
       </div>
     </section>
@@ -64,6 +83,16 @@ export function FloorplanSample() {
   const [similar, setSimilar] = useState<SampleFloorplan[]>([]);
   const [mode, setMode] = useState<"exact" | "describe" | "">("");
   const [ran, setRan] = useState(false);
+  const [openPlan, setOpenPlan] = useState<SampleFloorplan | null>(null);
+
+  useEffect(() => {
+    if (!openPlan) return;
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpenPlan(null);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [openPlan]);
 
   function run(query: FloorplanQuery, nextMode: "exact" | "describe") {
     const result = matchSampleFloorplans(query);
@@ -204,11 +233,40 @@ export function FloorplanSample() {
         <p className="text-ink/75">No other coach in this sample has the same layout.</p>
       ) : null}
       {describeMiss ? <p className="text-ink/75">Nothing in this sample matches that description.</p> : null}
-      <ResultList title={mode === "describe" ? "Matches in the sample" : "That coach"} plans={exact} />
+      <ResultList title={mode === "describe" ? "Matches in the sample" : "That coach"} plans={exact} onOpen={setOpenPlan} />
       <ResultList
         title={mode === "describe" ? "Matches in the sample" : "Similar layout in the sample"}
-        plans={mode === "describe" ? similar : similar}
+        plans={similar}
+        onOpen={setOpenPlan}
       />
+      {openPlan ? (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4 sm:items-center"
+          onClick={() => setOpenPlan(null)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={`${openPlan.year} ${openPlan.make} ${openPlan.model} ${openPlan.floorplan}`}
+            className="max-h-[90svh] w-full max-w-3xl overflow-auto rounded-md bg-white p-5"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <h2 className="font-[family-name:var(--font-display)] text-3xl font-semibold text-ink">
+                {openPlan.year} {openPlan.make} {openPlan.model} {openPlan.floorplan}
+              </h2>
+              <button type="button" onClick={() => setOpenPlan(null)} className="text-sm font-bold text-signal">
+                Close
+              </button>
+            </div>
+            <p className="mt-3 text-ink/80">{openPlan.layout}</p>
+            <div className="mt-4">
+              <FloorplanSketch plan={openPlan} large />
+            </div>
+            <p className="mt-3 text-sm text-ink/55">Sample sketch of the layout. This is not the factory drawing.</p>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
