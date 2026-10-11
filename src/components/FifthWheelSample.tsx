@@ -1,7 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
+import { CoachPicksList } from "@/components/CoachPicksList";
 import { FloorplanSketch } from "@/components/FloorplanSketch";
+import {
+  applyCoachSearch,
+  coachSearchFromResults,
+  coachSearchSavedMessage,
+} from "@/lib/coach-picks";
 import { formatBathrooms } from "@/lib/floorplan-sample";
 import {
   formatFeet,
@@ -9,6 +16,7 @@ import {
   type FifthWheelPlan,
   type FifthWheelQuery,
 } from "@/lib/fifth-wheel-sample";
+import { loadProfile, saveProfile } from "@/lib/profile-storage";
 
 const inputClass =
   "w-full rounded-md border border-fog bg-white px-4 py-3 text-base text-ink outline-none focus:border-signal";
@@ -85,6 +93,9 @@ export function FifthWheelSample() {
   const [mode, setMode] = useState<"exact" | "describe" | "">("");
   const [ran, setRan] = useState(false);
   const [openPlan, setOpenPlan] = useState<FifthWheelPlan | null>(null);
+  const [leadKind, setLeadKind] = useState("");
+  const [leadPicks, setLeadPicks] = useState<string[]>([]);
+  const [leadNote, setLeadNote] = useState("");
 
   useEffect(() => {
     if (!openPlan) return;
@@ -97,10 +108,29 @@ export function FifthWheelSample() {
 
   function run(query: FifthWheelQuery, nextMode: "exact" | "describe") {
     const result = matchFifthWheels(query);
-    setExact(nextMode === "exact" ? result.exact : []);
-    setSimilar(result.similar);
+    const exactPlans = nextMode === "exact" ? result.exact : [];
+    const similarPlans = result.similar;
+    setExact(exactPlans);
+    setSimilar(similarPlans);
     setMode(nextMode);
     setRan(true);
+    const search = coachSearchFromResults({
+      kind: nextMode === "exact" ? "exact" : "description",
+      exact: exactPlans,
+      similar: nextMode === "exact" ? similarPlans : similarPlans,
+      typed: {
+        year: query.year,
+        make: query.make,
+        model: query.model,
+        floorplan: query.floorplan,
+      },
+      rvType: "Fifth Wheel",
+    });
+    const saved = applyCoachSearch(loadProfile(), search);
+    saveProfile(saved);
+    setLeadKind(saved.coachSearchKind);
+    setLeadPicks(saved.coachPicks);
+    setLeadNote(coachSearchSavedMessage(search.kind, search.picks));
   }
 
   function yesNo(value: string) {
@@ -224,6 +254,21 @@ export function FifthWheelSample() {
         plans={similar}
         onOpen={setOpenPlan}
       />
+      {leadNote ? (
+        <div className="rounded-md border border-signal/30 bg-white p-5">
+          <p className="text-sm font-semibold tracking-wide text-signal uppercase">On the dealer lead</p>
+          <div className="mt-3">
+            <CoachPicksList kind={leadKind} picks={leadPicks} />
+          </div>
+          <p className="mt-3 text-sm text-ink/75">{leadNote}</p>
+          <Link
+            href="/profile/start"
+            className="mt-4 inline-flex rounded-md bg-signal px-5 py-3 text-sm font-bold tracking-wide text-white"
+          >
+            BUILD MY PROFILE
+          </Link>
+        </div>
+      ) : null}
       {openPlan ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4 sm:items-center" onClick={() => setOpenPlan(null)}>
           <div

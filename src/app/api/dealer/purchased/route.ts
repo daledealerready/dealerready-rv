@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { coachPickLines } from "@/lib/coach-picks";
 import { verifyDealerSessionToken } from "@/lib/dealer-auth";
 import { getSupabaseAdmin } from "@/lib/supabase";
 
@@ -54,6 +55,11 @@ export async function POST(request: Request) {
         creditRange: row.credit_range,
         incomeRange: row.income_range,
         travelDistance: row.travel_distance,
+        coachSearchKind:
+          row.coach_search === "exact" || row.coach_search === "description"
+            ? row.coach_search
+            : "",
+        coachPicks: coachPickLines(row.coach_picks),
       })),
     });
   } catch (error) {

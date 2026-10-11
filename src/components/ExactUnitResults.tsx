@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { CoachPicksList } from "@/components/CoachPicksList";
 import { ExactUnitSearch } from "@/components/ExactUnitSearch";
+import { applyCoachSearch, coachSearchSavedMessage } from "@/lib/coach-picks";
 import { parseExactUnit, type ExactUnit } from "@/lib/exact-unit";
-import { emptyProfile } from "@/lib/profile";
 import { loadProfile, saveProfile } from "@/lib/profile-storage";
 
 type ListedUnit = {
@@ -30,13 +31,14 @@ export function ExactUnitResults() {
   const [inventoryReady, setInventoryReady] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [leadPicks, setLeadPicks] = useState<string[]>([]);
+  const [leadNote, setLeadNote] = useState("");
 
   useEffect(() => {
     const parsed = parseExactUnit(query);
     setUnit(parsed);
     const current = loadProfile();
-    saveProfile({
-      ...emptyProfile,
+    const withSearch = {
       ...current,
       exactUnitQuery: parsed.raw,
       preferredManufacturer: parsed.manufacturer || current.preferredManufacturer,
@@ -44,14 +46,26 @@ export function ExactUnitResults() {
       preferredFloorplan: parsed.floorplan || current.preferredFloorplan,
       earliestYear: parsed.year || current.earliestYear,
       newestYear: parsed.year || current.newestYear,
-      openToComparable: false,
       condition: current.condition || (parsed.year ? "New" : current.condition),
-    });
-
-    if (!parsed.raw) {
+    };
+    if (!parsed.label) {
+      saveProfile(withSearch);
+      setLeadPicks([]);
+      setLeadNote("");
       setLoading(false);
       return;
     }
+    const saved = applyCoachSearch(withSearch, {
+      kind: "exact",
+      picks: [parsed.label],
+      manufacturer: parsed.manufacturer,
+      model: parsed.model,
+      floorplan: parsed.floorplan,
+      year: parsed.year,
+    });
+    saveProfile(saved);
+    setLeadPicks(saved.coachPicks);
+    setLeadNote(coachSearchSavedMessage("exact", saved.coachPicks));
 
     setLoading(true);
     setError("");
@@ -123,6 +137,18 @@ export function ExactUnitResults() {
               <span className="font-semibold text-ink">Floorplan:</span>{" "}
               {unit.floorplan || "—"}
             </p>
+          </div>
+        ) : null}
+
+        {leadNote ? (
+          <div className="mt-6 rounded-md border border-signal/30 bg-white p-5">
+            <p className="text-sm font-semibold tracking-wide text-signal uppercase">
+              On the dealer lead
+            </p>
+            <div className="mt-3">
+              <CoachPicksList kind="exact" picks={leadPicks} />
+            </div>
+            <p className="mt-3 text-sm text-ink/75">{leadNote}</p>
           </div>
         ) : null}
 

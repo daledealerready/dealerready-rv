@@ -27,6 +27,7 @@ import {
   saveBuyerCode,
   saveProfile,
 } from "@/lib/profile-storage";
+import { CoachPicksList } from "@/components/CoachPicksList";
 import { RvIdentityFields, RvYearSelect } from "@/components/RvIdentityFields";
 
 type Phase = "questions" | "verify" | "review" | "complete";
@@ -1320,6 +1321,16 @@ function ReviewStep({
       <p className="mt-4 text-lg text-ink/70">
         Tap any answer to change it here. You stay on this page.
       </p>
+      {profile.coachPicks.length > 0 ? (
+        <div className="mt-6 rounded-md border border-fog bg-white px-4 py-4">
+          <p className="text-sm font-semibold text-ink/55">
+            A dealer will see this from your search
+          </p>
+          <div className="mt-3">
+            <CoachPicksList kind={profile.coachSearchKind} picks={profile.coachPicks} />
+          </div>
+        </div>
+      ) : null}
 
       <div className="mt-8 divide-y divide-fog overflow-hidden rounded-md border border-fog bg-white">
         {rows.map((row) => {

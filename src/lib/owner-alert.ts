@@ -1,3 +1,5 @@
+import { coachPickGroups } from "@/lib/coach-picks";
+
 const DEFAULT_ALERT_EMAIL = "daleburns1@yahoo.com";
 
 export type ShopperAlert = {
@@ -16,6 +18,8 @@ export type ShopperAlert = {
   maxPrice: string;
   score: number;
   category: string;
+  coachSearchKind?: string;
+  coachPicks?: string[];
 };
 
 export type SellAlert = {
@@ -50,6 +54,9 @@ export function shopperAlertMessage(input: ShopperAlert) {
     `Email: ${input.email}`,
     `ZIP: ${input.zip}`,
     `Looking for: ${looking || "Not listed"}`,
+    ...coachPickGroups(input.coachSearchKind || "", input.coachPicks || []).flatMap(
+      (group) => [group.heading + ":", ...group.items.map((item) => `- ${item}`)],
+    ),
     `Timeline: ${input.timeline || "Not listed"}`,
     budget ? `Budget: ${budget}` : "",
     `Readiness: ${input.category} (${input.score})`,

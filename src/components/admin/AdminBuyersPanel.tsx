@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { CoachPicksList } from "@/components/CoachPicksList";
+import { coachPickLines } from "@/lib/coach-picks";
 
 type BuyerRow = {
   id: string;
@@ -265,6 +267,16 @@ function BuyerDetail({ buyer }: { buyer: BuyerRow }) {
       <p className="mt-1 text-sm text-ink/55">
         Submitted {new Date(buyer.created_at).toLocaleString()}
       </p>
+      <div className="mt-4">
+        <CoachPicksList
+          kind={
+            typeof buyer.profile?.coachSearchKind === "string"
+              ? buyer.profile.coachSearchKind
+              : ""
+          }
+          picks={coachPickLines(buyer.profile?.coachPicks)}
+        />
+      </div>
       <dl className="mt-6 space-y-3">
         {rows.map(([label, value]) => (
           <div key={label} className="border-b border-fog pb-3">

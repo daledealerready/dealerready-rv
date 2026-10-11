@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { CoachPicksList } from "@/components/CoachPicksList";
 
 const SESSION_KEY = "dealerready-dealer-token";
 
@@ -26,6 +27,8 @@ type PurchasedLead = {
   maxPrice: string | null;
   downPayment: string | null;
   hasTrade: string | null;
+  coachSearchKind: string;
+  coachPicks: string[];
 };
 
 export function PurchasedLeadsPanel() {
@@ -126,6 +129,11 @@ export function PurchasedLeadsPanel() {
                 <p className="mt-1 text-sm text-ink/65">
                   {lead.buyerCode} · {lead.category} · ${lead.price}
                 </p>
+                <CoachPicksList
+                  kind={lead.coachSearchKind}
+                  picks={lead.coachPicks}
+                  compact
+                />
               </button>
             ))}
           </div>
@@ -141,6 +149,10 @@ export function PurchasedLeadsPanel() {
                   <br />
                   {selected.email}
                 </p>
+                <CoachPicksList
+                  kind={selected.coachSearchKind}
+                  picks={selected.coachPicks}
+                />
                 <p>Preferred contact: {selected.preferredContact || "—"}</p>
                 <p>ZIP: {selected.zip || "—"}</p>
                 <p>Score: {selected.score}</p>

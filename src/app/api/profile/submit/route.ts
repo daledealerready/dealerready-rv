@@ -240,6 +240,8 @@ export async function POST(request: Request) {
           maxPrice: profile.maxPrice || "",
           score,
           category,
+          coachSearchKind: profile.coachSearchKind || "",
+          coachPicks: profile.coachPicks || [],
         }),
       );
 
@@ -314,6 +316,8 @@ export async function POST(request: Request) {
         maxPrice: profile.maxPrice || "",
         score,
         category,
+        coachSearchKind: profile.coachSearchKind || "",
+        coachPicks: profile.coachPicks || [],
       }),
     );
 

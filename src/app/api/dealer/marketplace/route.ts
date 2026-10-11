@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { coachPickLines } from "@/lib/coach-picks";
 import { verifyDealerSessionToken } from "@/lib/dealer-auth";
 import { getLeadPrice } from "@/lib/pricing";
 import { getSupabaseAdmin } from "@/lib/supabase";
@@ -59,6 +60,11 @@ export async function POST(request: Request) {
         rvTypes: row.rv_types || [],
         condition: row.condition,
         preferredManufacturer: row.preferred_manufacturer,
+        coachSearchKind:
+          row.coach_search === "exact" || row.coach_search === "description"
+            ? row.coach_search
+            : "",
+        coachPicks: coachPickLines(row.coach_picks),
         minPrice: row.min_price,
         maxPrice: row.max_price,
         downPayment: row.down_payment,

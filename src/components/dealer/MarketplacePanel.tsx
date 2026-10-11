@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { CoachPicksList } from "@/components/CoachPicksList";
 
 const SESSION_KEY = "dealerready-dealer-token";
 
@@ -16,6 +17,8 @@ type Opportunity = {
   rvTypes: string[];
   condition: string | null;
   preferredManufacturer: string | null;
+  coachSearchKind: string;
+  coachPicks: string[];
   minPrice: string | null;
   maxPrice: string | null;
   downPayment: string | null;
@@ -230,6 +233,11 @@ export function MarketplacePanel() {
                   {item.purchaseTimeline || "Timeline n/a"} · Trade:{" "}
                   {item.hasTrade || "—"} · {item.spotsLeft} of 3 spots left
                 </p>
+                <CoachPicksList
+                  kind={item.coachSearchKind}
+                  picks={item.coachPicks}
+                  compact
+                />
               </button>
             ))}
           </div>
@@ -242,6 +250,10 @@ export function MarketplacePanel() {
                 </h2>
                 <p className="font-semibold text-signal">{selected.buyerCode}</p>
                 <p>Score: {selected.score}</p>
+                <CoachPicksList
+                  kind={selected.coachSearchKind}
+                  picks={selected.coachPicks}
+                />
                 <p>RV: {(selected.rvTypes || []).join(", ") || "—"}</p>
                 <p>Condition: {selected.condition || "—"}</p>
                 <p>Brand: {selected.preferredManufacturer || "—"}</p>

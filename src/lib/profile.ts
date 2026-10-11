@@ -1,3 +1,4 @@
+import { cleanCoachPicks } from "@/lib/coach-picks";
 import { NOT_SURE, OTHER, RV_MAKES } from "@/lib/rv-catalog";
 
 export const TOTAL_QUESTIONS = 12;
@@ -12,6 +13,8 @@ export type BuyerProfile = {
   preferredModel: string;
   preferredFloorplan: string;
   exactUnitQuery: string;
+  coachSearchKind: "" | "exact" | "description";
+  coachPicks: string[];
   openToComparable: boolean;
   minPrice: string;
   maxPrice: string;
@@ -61,6 +64,8 @@ export const emptyProfile: BuyerProfile = {
   preferredModel: "",
   preferredFloorplan: "",
   exactUnitQuery: "",
+  coachSearchKind: "",
+  coachPicks: [],
   openToComparable: true,
   minPrice: "",
   maxPrice: "",
@@ -243,6 +248,9 @@ export function scoreProfile(profile: BuyerProfile): {
     profile.preferredManufacturer !== "Not sure yet"
   ) {
     score += 2;
+  }
+  if (cleanCoachPicks(profile.coachPicks).length > 0) {
+    score += profile.coachSearchKind === "exact" ? 8 : 6;
   }
 
   if (
