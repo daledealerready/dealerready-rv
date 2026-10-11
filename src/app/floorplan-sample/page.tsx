@@ -22,7 +22,11 @@ export default function FloorplanSamplePage() {
           Match a floorplan before asking a manufacturer.
         </h1>
         <p className="mt-5 max-w-2xl text-lg leading-relaxed text-ink/75">
-          Six coaches only. Each match shows a small layout sketch and a short description. Tap a sketch to enlarge it. These sketches are not the factory drawings.
+          Six coaches only. Each match shows a small layout sketch and a short description. Tap a sketch to enlarge it. These sketches are not the factory drawings. A separate{" "}
+          <Link href="/floorplan-sample-fifth-wheel" className="font-semibold text-signal underline">
+            2022 fifth wheel test
+          </Link>{" "}
+          uses bedrooms front and rear, four slides, and a loft.
         </p>
         <div className="mt-10">
           <FloorplanSample />

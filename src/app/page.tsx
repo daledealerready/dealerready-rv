@@ -43,6 +43,9 @@ export default function Home() {
               <Link href="/floorplan-sample" className="mt-3 inline-block text-sm font-semibold text-warm underline">
                 Try a sample floorplan match
               </Link>
+              <Link href="/floorplan-sample-fifth-wheel" className="mt-2 block text-sm font-semibold text-warm underline">
+                Try a 2022 fifth wheel match
+              </Link>
             </div>
 
             <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">

@@ -1,5 +1,3 @@
-import type { SampleFloorplan } from "@/lib/floorplan-sample";
-
 const FILL: Record<string, string> = {
   Cab: "#d5dbe0",
   Living: "#e6eee8",
@@ -9,13 +7,22 @@ const FILL: Record<string, string> = {
   Bath: "#c5daf0",
   Bunks: "#d5ecd8",
   "Drop-down": "#e7dcc8",
+  Loft: "#e4d4f0",
+};
+
+export type FloorplanSketchPlan = {
+  year: number;
+  make: string;
+  model: string;
+  floorplan: string;
+  sketch: { label: string }[][];
 };
 
 export function FloorplanSketch({
   plan,
   large = false,
 }: {
-  plan: SampleFloorplan;
+  plan: FloorplanSketchPlan;
   large?: boolean;
 }) {
   const bands = plan.sketch;
