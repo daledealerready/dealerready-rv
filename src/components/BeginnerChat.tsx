@@ -20,6 +20,7 @@ export function BeginnerChat() {
   ]);
   const [suggestions, setSuggestions] = useState(OPENER.suggestions);
   const [savedType, setSavedType] = useState("");
+  const [alsoSaved, setAlsoSaved] = useState("");
   const scroller = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -44,7 +45,12 @@ export function BeginnerChat() {
     if (reply.summary || reply.rvTypes.length > 0) {
       const saved = applyGuideReply(loadProfile(), reply);
       saveProfile(saved);
-      setSavedType(saved.rvTypes[saved.rvTypes.length - 1] || "");
+      if (reply.rvTypes.length > 0) {
+        setSavedType(reply.rvTypes.join(", "));
+        setAlsoSaved(
+          saved.rvTypes.filter((type) => !reply.rvTypes.includes(type)).join(", "),
+        );
+      }
     }
     setMessages((current) => [
       ...current,
@@ -100,6 +106,9 @@ export function BeginnerChat() {
             {savedType ? (
               <div className="rounded-md border border-signal/30 bg-white px-3 py-3 text-sm text-ink">
                 <p className="font-semibold">Saved on your profile: {savedType}</p>
+                {alsoSaved ? (
+                  <p className="mt-1 text-ink/70">Also kept: {alsoSaved}</p>
+                ) : null}
                 <Link
                   href="/profile/start"
                   className="mt-3 inline-flex rounded-md bg-signal px-4 py-2 text-sm font-bold text-white"
