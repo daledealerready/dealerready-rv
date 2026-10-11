@@ -73,7 +73,7 @@ export function BeginnerChat() {
                 Newcomer guide
               </p>
               <p className="text-sm text-ink/65">
-                Towable or motorized, in plain language.
+                Camping questions, in plain language.
               </p>
             </div>
             <button

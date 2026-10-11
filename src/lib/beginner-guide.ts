@@ -1,3 +1,4 @@
+import { answerCampingQuestion } from "@/lib/camping-topics";
 import type { BuyerProfile } from "@/lib/profile";
 
 export type GuideReply = {
@@ -9,8 +10,8 @@ export type GuideReply = {
 
 const COMPARE = [
   "Towable or motorized?",
-  "Benefits of each",
-  "What is a chassis?",
+  "How do the tanks work?",
+  "What happens the first night?",
   "What can my truck pull?",
 ];
 
@@ -137,10 +138,12 @@ function chevy1500Answer(text: string): GuideReply | null {
 }
 
 function towAnswer(text: string): GuideReply | null {
+  if (/\b(ride|riding|passenger|passengers|fast|speed|mph)\b/.test(text)) return null;
+  if (/\b(car|dinghy|toad)\b/.test(text) && /\b(behind|tow|towing)\b/.test(text)) return null;
   const aboutTow =
-    includes(text, "pull") ||
-    includes(text, "tow") ||
-    includes(text, "towing") ||
+    /\bpull\b/.test(text) ||
+    /\btow\b/.test(text) ||
+    /\btowing\b/.test(text) ||
     includes(text, "payload") ||
     includes(text, "tongue") ||
     includes(text, "gvwr") ||
@@ -182,7 +185,7 @@ export function answerBeginnerQuestion(raw: string): GuideReply {
 
   if (!text || /^(hi|hello|hey|help)$/.test(text)) {
     return reply(
-      "Ask a beginner question in a sentence. I can explain a towable versus a motorhome, what your truck can pull, and what a chassis is. I save an RV type only when you say you want that one. I will not add you to a list just for asking.",
+      "Ask me about camping in a motorhome, a fifth wheel, or a travel trailer. Tanks, hookups, the hitch, the campsite, and the first night are all fair. I will not quote a price, invent a floorplan, or guess the chassis under one coach. I save an RV type only when you say you want that one.",
       COMPARE,
       "",
     );
@@ -205,13 +208,28 @@ export function answerBeginnerQuestion(raw: string): GuideReply {
   if (towing) return towing;
 
   if (
+    includes(text, "floorplan") ||
+    includes(text, "floor plan") ||
+    (/\b(20\d{2}|phaeton|tiffin|jayco|entegra|berkshire|discovery|sanibel|winnebago|newmar|airstream)\b/.test(
+      text,
+    ) &&
+      /\b(bunks|floorplan|floor plan|how many slide|sleeps|two bath|2 bath)\b/.test(text))
+  ) {
+    return reply(
+      "I will not invent a floorplan. Two coaches the same length can put the bedroom, the bunks, and the bath in different places. The builder's sheet for that exact model is the source.\n\nI can still explain what a bunk room, a loft, a slide, or a tank is. I did not add a type to your list.",
+      ["How do the tanks work?", "What is a slide out?", "What happens the first night?"],
+      "Asked for a floorplan.",
+    );
+  }
+
+  if (
     includes(text, "price") ||
     includes(text, "cost") ||
     includes(text, "how much is") ||
     includes(text, "payment")
   ) {
     return reply(
-      "I can't quote a price from here. The same floorplan changes with the year, the options, and whether it is new or used. A dealer is the one who prices a coach.\n\nI can explain towable versus motorized, what a truck can pull, or what a chassis is. I did not add a type to your list.",
+      "I can't quote a price from here. The same coach changes with the year, the options, and whether it is new or used. A dealer is the one who prices it.\n\nI can explain camping, a towable versus a motorhome, or what a truck can pull. I did not add a type to your list.",
       COMPARE,
       "Asked about price.",
     );
@@ -242,6 +260,9 @@ export function answerBeginnerQuestion(raw: string): GuideReply {
   const wantsMotor =
     includes(text, "motor") || includes(text, "drive it") || includes(text, "drivable");
   const type = matchedType(text);
+
+  const camping = answerCampingQuestion(text);
+  if (camping && !(isPicking(text) && type)) return reply(camping.reply, camping.suggestions, camping.summary);
 
   if (
     wantsBenefits ||
@@ -278,7 +299,7 @@ export function answerBeginnerQuestion(raw: string): GuideReply {
   }
 
   return reply(
-    "I did not add anything to your list. I can answer a beginner question: towable versus motorized, what your truck can pull, what a chassis is, or what a travel trailer, fifth wheel, or motorhome class is. Ask it in a sentence. If you already know the type you want, say “I want a fifth wheel” and I will save only that.",
+    "I did not add anything to your list. Ask me about camping in a motorhome, a fifth wheel, or a travel trailer: the tanks, the hookups, the hitch, the campsite, or the first night. I will not quote a price, invent a floorplan, or guess the chassis under one coach. If you already know the type you want, say you want a fifth wheel and I will save only that.",
     COMPARE,
     "",
   );
