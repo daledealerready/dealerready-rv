@@ -84,7 +84,7 @@ export function BeginnerChat() {
               Close
             </button>
           </header>
-          <div ref={scroller} className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
+          <div ref={scroller} className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4">
             {messages.map((message, index) => (
               <p
                 key={`${message.role}-${index}`}
